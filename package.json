@@ -1,0 +1,34 @@
+{
+  "name": "jevflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JevFlow — a decision-driven visual workflow runtime for AI agents.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm run build:core && pnpm --parallel --filter @jevflow/server --filter @jevflow/studio run dev",
+    "dev:server": "pnpm --filter @jevflow/server run dev",
+    "dev:studio": "pnpm --filter @jevflow/studio run dev",
+    "build:core": "pnpm --filter @jevflow/core run build",
+    "build": "pnpm run build:core && pnpm --filter @jevflow/server --filter @jevflow/studio --filter @jevflow/example-research-agent run build",
+    "typecheck": "pnpm run build:core && pnpm -r run typecheck",
+    "start": "pnpm --filter @jevflow/server run start",
+    "seed": "pnpm --filter @jevflow/server run seed",
+    "example:research": "pnpm --filter @jevflow/example-research-agent run dev",
+    "lint": "eslint . --ext .ts,.vue",
+    "format": "prettier --write \"**/*.{ts,json,md,vue,css,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md,vue,css,yaml,yml}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.3"
+  }
+}

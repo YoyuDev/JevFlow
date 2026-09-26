@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JevFlow Studio</title>
+    <meta
+      name="description"
+      content="JevFlow Studio —— 面向 AI Agent 的可视化工作流编排与执行工具。"
+    />
+    <script>
+      // 在首帧之前套用主题与语言，避免刷新时闪一下白底。
+      // 这里的 key 必须和 src/i18n/index.ts 中的常量保持一致。
+      (function () {
+        try {
+          var storedTheme = localStorage.getItem('jevflow.theme');
+          var dark = storedTheme
+            ? storedTheme === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var root = document.documentElement;
+          if (dark) root.classList.add('dark');
+          root.style.colorScheme = dark ? 'dark' : 'light';
+          var locale = localStorage.getItem('jevflow.locale');
+          if (locale) root.lang = locale;
+        } catch (error) {
+          /* 隐私模式下读不到 localStorage，用默认值即可 */
+        }
+      })();
+    </script>
+    <style>
+      html,
+      body,
+      #app {
+        height: 100%;
+        margin: 0;
+      }
+      html {
+        background: #f6f7f9;
+      }
+      html.dark {
+        background: #0f1115;
+      }
+      body {
+        /* 中文优先字体栈，与 src/styles/index.css 的 --font-sans 保持一致 */
+        font-family:
+          'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei UI', 'Microsoft YaHei',
+          'Source Han Sans SC', 'Noto Sans SC', 'Hiragino Sans GB', system-ui, -apple-system,
+          'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

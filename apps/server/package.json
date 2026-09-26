@@ -1,0 +1,29 @@
+{
+  "name": "@jevflow/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JevFlow API server — Fastify + SQLite, exposes workflow CRUD and the workflow runtime.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "seed": "tsx src/scripts/seed.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@jevflow/core": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

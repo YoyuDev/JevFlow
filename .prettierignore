@@ -1,0 +1,14 @@
+node_modules
+dist
+pnpm-lock.yaml
+data
+*.md
+
+# caches and local verification scaffolding
+.pnpm-store
+.npm-cache
+_audit
+_consumer
+_packtest
+.cdp-*
+*.log

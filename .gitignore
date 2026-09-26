@@ -1,0 +1,53 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# package caches kept inside the repo, so a sandbox without a writable home still works
+.npm-cache/
+
+# build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# database (runtime data, never commit)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/*.sqlite
+data/*.sqlite3
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+logs/
+
+# editors / os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# caches
+.cache/
+.vite/
+coverage/
+
+# local verification scaffolding (cdp audit harness, throwaway consumer project)
+_audit/
+_consumer/
+_packtest/
+_env_probe.txt
+
+# local agent workspace: machine-specific notes + personal skills, not project source
+.workbuddy/
+# Chrome debug profiles, in case a harness is run from the repo root
+.cdp-*/

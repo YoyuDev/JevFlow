@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'examples/*'
+
+# pnpm >= 10 blocks postinstall scripts by default, which leaves native modules
+# without their binding. `better-sqlite3` must build its native addon or the
+# server cannot open the database; `esbuild` needs its platform binary wired up.
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  vue-demi: true

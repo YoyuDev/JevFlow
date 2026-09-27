@@ -37,6 +37,15 @@ export const workflowApi = {
     await http.delete(`/workflows/${id}`);
   },
 
+  /**
+   * Renames a project on its own. The server accepts a partial patch, so the
+   * canvas does not have to be round-tripped just to change a label.
+   */
+  async rename(id: string, name: string): Promise<Workflow> {
+    const { data } = await http.put<{ workflow: Workflow }>(`/workflows/${id}`, { name });
+    return data.workflow;
+  },
+
   async run(id: string, input: string, providers?: RunProviders): Promise<RunResponse> {
     const { data } = await http.post<RunResponse>(`/workflows/${id}/run`, {
       input,

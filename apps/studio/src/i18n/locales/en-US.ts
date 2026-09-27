@@ -22,14 +22,47 @@ const enUS: MessageSchema = {
   },
 
   workflow: {
-    select: 'Select workflow',
-    untitled: 'Untitled workflow',
+    select: 'Select project',
+    untitled: 'Untitled project',
     new: 'New',
     remove: 'Delete',
     save: 'Save',
     run: 'Run workflow',
     unsaved: 'Unsaved',
     saved: 'Saved',
+  },
+
+  projects: {
+    open: 'Projects',
+    title: 'Projects',
+    hint: 'A project is one workflow definition, stored in the local SQLite database.',
+    search: 'Search projects',
+    new: 'New project',
+    draftHint:
+      'This is an unsaved new project. Hit “Save” in the header and it shows up in the list below.',
+    empty: 'No projects yet. Start with “New project”.',
+    noMatch: 'No project matches that search.',
+    current: 'Current',
+    // vue-i18n picks the branch from the count, so “1 node” stays grammatical.
+    nodeCount: '{count} node | {count} nodes',
+    edgeCount: '{count} edge | {count} edges',
+    updatedAt: 'updated {time}',
+    action: {
+      open: 'Open',
+      rename: 'Rename',
+      duplicate: 'Duplicate',
+      remove: 'Delete',
+    },
+    copySuffix: 'copy',
+    draftCopyHint:
+      '“{name}” has unsaved changes; the copy is made from the saved version. Continue?',
+    renameTitle: 'Rename project',
+    renamePlaceholder: 'Project name',
+    renameEmpty: 'The name cannot be empty',
+    renameTooLong: 'The name can be at most 120 characters',
+    removeTitle: 'Delete project',
+    removeConfirm: 'Delete the project “{name}”? This cannot be undone.',
+    close: 'Done',
   },
 
   panel: {
@@ -182,19 +215,24 @@ const enUS: MessageSchema = {
     requestFailed: 'Request failed: {error}',
     saved: 'Saved · {name} (v{version})',
     saveFailed: 'Save failed: {error}',
-    workflowRemoved: 'Workflow deleted',
+    workflowRemoved: 'Project deleted',
     workflowRemoveFailed: 'Delete failed: {error}',
+    renamed: 'Renamed to “{name}”',
+    renameFailed: 'Rename failed: {error}',
+    duplicated: 'Duplicated as “{name}”',
+    duplicateFailed: 'Duplicate failed: {error}',
     runCompleted: 'Finished · {steps} steps · {duration}ms',
     runFailed: 'Run failed: {error}',
   },
 
   dialog: {
-    unsavedTitle: 'New workflow',
+    unsavedTitle: 'Unsaved changes',
+    switchTitle: 'Switch project',
     unsavedMessage: 'Your changes are not saved yet. Continuing will discard them.',
     continue: 'Continue',
     cancel: 'Cancel',
-    deleteTitle: 'Delete workflow',
-    deleteMessage: 'Delete the current workflow? This cannot be undone.',
+    deleteTitle: 'Delete project',
+    deleteMessage: 'Delete the current project? This cannot be undone.',
     delete: 'Delete',
   },
 

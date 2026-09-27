@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ElMessageBox } from 'element-plus';
-import { Moon, Setting, Sunny } from '@element-plus/icons-vue';
+import { FolderOpened, Moon, Plus, Setting, Sunny } from '@element-plus/icons-vue';
 import ExecutionTrace from '@/components/ExecutionTrace.vue';
 import FlowCanvas from '@/components/FlowCanvas.vue';
 import NodeConfigPanel from '@/components/NodeConfigPanel.vue';
 import NodeLibrary from '@/components/NodeLibrary.vue';
 import PanelResizer from '@/components/PanelResizer.vue';
+import ProjectDialog from '@/components/ProjectDialog.vue';
 import RunDialog from '@/components/RunDialog.vue';
 import SettingsDialog from '@/components/SettingsDialog.vue';
 import { LOCALE_LABELS, SUPPORTED_LOCALES, isAppLocale } from '@/i18n';
 import { PANE_BOUNDS, useLayoutStore, type PaneKey } from '@/stores/layout';
 import { usePreferencesStore } from '@/stores/preferences';
+import { useProjectsStore } from '@/stores/projects';
 import { useProvidersStore } from '@/stores/providers';
 import { useWorkflowStore } from '@/stores/workflow';
 import type { ProviderKind } from '@/types';
@@ -20,6 +21,7 @@ import type { ProviderKind } from '@/types';
 const store = useWorkflowStore();
 const preferences = usePreferencesStore();
 const providers = useProvidersStore();
+const projects = useProjectsStore();
 const layout = useLayoutStore();
 const { t } = useI18n();
 
@@ -111,36 +113,34 @@ function onLocaleChange(value: string | number | boolean): void {
   if (isAppLocale(value)) preferences.setLocale(value);
 }
 
-function onSelectWorkflow(id: string): void {
-  if (id && id !== store.current?.id) void store.open(id);
+/** Element Plus reads `''` as “nothing selected”, so the draft row needs a sentinel. */
+const DRAFT_OPTION_ID = '__draft__';
+
+/** Unpersisted projects are absent from `summaries` — surface the open one anyway
+ *  so the select shows what is actually on the canvas instead of going blank. */
+const workflowOptions = computed(() => {
+  const saved = store.summaries.map((item) => ({
+    id: item.id,
+    label: `${item.name} · v${item.version}`,
+  }));
+  if (!store.hasWorkflow || store.isPersisted) return saved;
+  return [{ id: DRAFT_OPTION_ID, label: `${store.name} · ${t('workflow.unsaved')}` }, ...saved];
+});
+
+const activeWorkflowId = computed(() =>
+  store.hasWorkflow && !store.isPersisted ? DRAFT_OPTION_ID : (store.current?.id ?? ''),
+);
+
+/** Project switching lives in the projects store, which guards unsaved work. */
+function onSelectWorkflow(id: string | number | boolean | undefined): void {
+  const value = String(id ?? '');
+  // The draft row *is* the open project, so there is nothing to switch to.
+  if (!value || value === DRAFT_OPTION_ID) return;
+  void projects.open(value);
 }
 
-async function onNew(): Promise<void> {
-  if (store.dirty) {
-    try {
-      await ElMessageBox.confirm(t('dialog.unsavedMessage'), t('dialog.unsavedTitle'), {
-        type: 'warning',
-        confirmButtonText: t('dialog.continue'),
-        cancelButtonText: t('dialog.cancel'),
-      });
-    } catch {
-      return;
-    }
-  }
-  store.createNew();
-}
-
-async function onDelete(): Promise<void> {
-  try {
-    await ElMessageBox.confirm(t('dialog.deleteMessage'), t('dialog.deleteTitle'), {
-      type: 'warning',
-      confirmButtonText: t('dialog.delete'),
-      cancelButtonText: t('dialog.cancel'),
-    });
-  } catch {
-    return;
-  }
-  await store.remove();
+function onNew(): void {
+  void projects.create();
 }
 
 function onRun(input: string): void {
@@ -162,20 +162,15 @@ function onRun(input: string): void {
       <div class="app-header__center">
         <el-select
           class="workflow-select"
-          :model-value="store.current?.id ?? ''"
+          :model-value="activeWorkflowId"
           :placeholder="t('workflow.select')"
           @change="onSelectWorkflow"
         >
-          <el-option
-            v-for="item in store.summaries"
-            :key="item.id"
-            :label="`${item.name} · v${item.version}`"
-            :value="item.id"
-          />
+          <el-option v-for="item in workflowOptions" :key="item.id" :label="item.label" :value="item.id" />
         </el-select>
-        <el-button @click="onNew">{{ t('workflow.new') }}</el-button>
-        <el-button :disabled="!store.hasWorkflow" @click="onDelete">
-          {{ t('workflow.remove') }}
+        <el-button :icon="Plus" @click="onNew">{{ t('projects.new') }}</el-button>
+        <el-button class="projects-open" :icon="FolderOpened" @click="projects.openPanel()">
+          {{ t('projects.open') }}
         </el-button>
       </div>
 
@@ -273,5 +268,6 @@ function onRun(input: string): void {
 
     <RunDialog v-model="runDialogVisible" :running="store.running" @run="onRun" />
     <SettingsDialog v-model="settingsVisible" />
+    <ProjectDialog />
   </div>
 </template>

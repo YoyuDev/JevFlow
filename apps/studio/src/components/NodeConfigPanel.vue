@@ -66,6 +66,16 @@ function setChoice(index: number, value: string): void {
   set('choices', next);
 }
 
+/**
+ * Picked by the `el-select` for one edge's branch condition.
+ *
+ * Written as a plain function rather than a factory on purpose — see the note
+ * on event bindings below.
+ */
+function setBranchCondition(edgeId: string, value: unknown): void {
+  store.updateEdgeCondition(edgeId, String(value ?? ''));
+}
+
 function addChoice(): void {
   set('choices', [...choices(), `choice-${choices().length + 1}`]);
 }
@@ -85,25 +95,20 @@ function appendToken(token: string, key: string): void {
 }
 
 /**
- * Element Plus emits `string` from `el-input` and `number | undefined` from
- * `el-input-number`. These factories keep the template free of inline arrow
- * functions, which Vue cannot type-check without an inline annotation.
+ * ---------------------------------------------------------------------------
+ * 模板里的 `@update:model-value` 一律写成「直接调用」，例如
+ *   @update:model-value="set('prompt', $event)"
+ *
+ * 千万别改回「工厂函数」写法（`fieldInput('prompt')`）。Vue 只会把**成员表达式**
+ * （`onLabel`、`providerInput`）原样当 handler；带括号的调用会被编译成
+ *   `$event => fieldInput('prompt')`
+ * 也就是每次事件都新建一个函数然后丢掉 —— 输入框看着能用，值永远写不进去。
+ * ---------------------------------------------------------------------------
  */
-function fieldInput(key: string): (value: string | number | undefined) => void {
-  return (value) => set(key, value);
-}
-
-function choiceInput(index: number): (value: string | number | undefined) => void {
-  return (value) => setChoice(index, String(value ?? ''));
-}
 
 /** `ProviderPicker` already narrowed this to a string. */
 function providerInput(value: string): void {
   set('providerId', value);
-}
-
-function conditionInput(edgeId: string): (value: string | number | undefined) => void {
-  return (value) => store.updateEdgeCondition(edgeId, String(value ?? ''));
 }
 
 async function confirmRemoveNode(): Promise<void> {
@@ -183,7 +188,7 @@ async function confirmRemoveEdge(): Promise<void> {
             <el-input
               :model-value="field('model')"
               :placeholder="t('inspector.modelPlaceholder')"
-              @update:model-value="fieldInput('model')"
+              @update:model-value="set('model', $event)"
             />
           </div>
           <div class="field">
@@ -192,7 +197,7 @@ async function confirmRemoveEdge(): Promise<void> {
               type="textarea"
               :rows="3"
               :model-value="field('systemPrompt')"
-              @update:model-value="fieldInput('systemPrompt')"
+              @update:model-value="set('systemPrompt', $event)"
             />
           </div>
           <div class="field">
@@ -201,7 +206,7 @@ async function confirmRemoveEdge(): Promise<void> {
               type="textarea"
               :rows="5"
               :model-value="field('prompt')"
-              @update:model-value="fieldInput('prompt')"
+              @update:model-value="set('prompt', $event)"
             />
           </div>
           <div class="field">
@@ -212,7 +217,7 @@ async function confirmRemoveEdge(): Promise<void> {
               :max="2"
               :step="0.1"
               :precision="1"
-              @update:model-value="fieldInput('temperature')"
+              @update:model-value="set('temperature', $event)"
             />
           </div>
         </template>
@@ -229,7 +234,7 @@ async function confirmRemoveEdge(): Promise<void> {
               type="textarea"
               :rows="3"
               :model-value="field('question')"
-              @update:model-value="fieldInput('question')"
+              @update:model-value="set('question', $event)"
             />
           </div>
           <div class="field">
@@ -238,8 +243,13 @@ async function confirmRemoveEdge(): Promise<void> {
           </div>
           <div class="field">
             <label>{{ t('inspector.choices') }}</label>
-            <div v-for="(choice, index) in choices()" :key="`${index}-${choice}`" class="choice-row">
-              <el-input :model-value="choice" @update:model-value="choiceInput(index)" />
+            <!-- Keyed by index on purpose: keying by the value would rebuild the
+                 row (and drop focus) on the first keystroke of an edit. -->
+            <div v-for="(choice, index) in choices()" :key="index" class="choice-row">
+              <el-input
+                :model-value="choice"
+                @update:model-value="setChoice(index, String($event ?? ''))"
+              />
               <el-button text type="danger" @click="removeChoice(index)">×</el-button>
             </div>
             <el-button size="small" @click="addChoice">{{ t('inspector.addChoice') }}</el-button>
@@ -252,7 +262,7 @@ async function confirmRemoveEdge(): Promise<void> {
               <el-select
                 :model-value="String(item.data?.condition ?? '')"
                 :placeholder="t('inspector.condition')"
-                @update:model-value="conditionInput(item.id)"
+                @update:model-value="setBranchCondition(item.id, $event)"
               >
                 <el-option v-for="choice in choices()" :key="choice" :label="choice" :value="choice" />
               </el-select>
@@ -264,7 +274,10 @@ async function confirmRemoveEdge(): Promise<void> {
         <template v-else-if="nodeType === 'tool'">
           <div class="field">
             <label>{{ t('inspector.tool') }}</label>
-            <el-select :model-value="field('tool') || 'search'" @update:model-value="fieldInput('tool')">
+            <el-select
+              :model-value="field('tool') || 'search'"
+              @update:model-value="set('tool', $event)"
+            >
               <el-option v-for="tool in toolOptions" :key="tool" :label="tool" :value="tool" />
             </el-select>
           </div>
@@ -273,7 +286,7 @@ async function confirmRemoveEdge(): Promise<void> {
             <el-input
               :model-value="field('query')"
               placeholder="{{input}}"
-              @update:model-value="fieldInput('query')"
+              @update:model-value="set('query', $event)"
             />
           </div>
         </template>
@@ -284,7 +297,7 @@ async function confirmRemoveEdge(): Promise<void> {
             <el-input
               :model-value="field('output')"
               :placeholder="t('inspector.outputTemplatePlaceholder')"
-              @update:model-value="fieldInput('output')"
+              @update:model-value="set('output', $event)"
             />
           </div>
           <p class="hint">{{ t('inspector.outputHint') }}</p>
@@ -321,7 +334,7 @@ async function confirmRemoveEdge(): Promise<void> {
           <el-input
             :model-value="edgeCondition"
             :placeholder="t('inspector.conditionPlaceholder')"
-            @update:model-value="conditionInput(edgeKey)"
+            @update:model-value="setBranchCondition(edgeKey, $event)"
           />
         </div>
         <p class="hint">{{ t('inspector.edgeHint') }}</p>

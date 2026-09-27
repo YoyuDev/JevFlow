@@ -15,6 +15,12 @@ const enUS: MessageSchema = {
     switchToDark: 'Switch to dark',
   },
 
+  layout: {
+    resizeNodes: 'Drag to resize the node library (double-click to reset)',
+    resizeInspector: 'Drag to resize the inspector (double-click to reset)',
+    resizeTrace: 'Drag to resize the execution trace (double-click to reset)',
+  },
+
   workflow: {
     select: 'Select workflow',
     untitled: 'Untitled workflow',

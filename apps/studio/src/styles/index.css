@@ -161,9 +161,15 @@ code {
 
 .app-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* The implicit `auto` column would size to max-content and let the canvas push
+     the shell past the viewport on a narrow window, so the column is explicit. */
+  grid-template-columns: minmax(0, 1fr);
+  /* Pane sizes live in inline custom properties set by the layout store. */
+  grid-template-rows: auto minmax(0, 1fr) var(--pane-bottom, 244px);
   height: 100vh;
   overflow: hidden;
+  /* The resizers are absolutely positioned against the shell. */
+  position: relative;
 }
 
 .app-header {
@@ -299,9 +305,120 @@ code {
 
 .app-main {
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr) 340px;
+  grid-template-columns: var(--pane-left, 236px) minmax(0, 1fr) var(--pane-right, 340px);
+  min-width: 0;
   min-height: 0;
   border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+/* ------------------------------ pane resizers ---------------------------- */
+/* A handle is a 9px hit area laid over an existing 1px border: the divider you
+   see never moves, only the grab zone around it widens. */
+
+.resizer {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+}
+
+.resizer--col {
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+}
+
+.resizer--row {
+  left: 0;
+  right: 0;
+  height: 9px;
+  cursor: row-resize;
+}
+
+.resizer--left {
+  left: var(--pane-left, 236px);
+  transform: translateX(-50%);
+}
+
+.resizer--right {
+  right: var(--pane-right, 340px);
+  transform: translateX(50%);
+}
+
+.resizer--bottom {
+  bottom: var(--pane-bottom, 244px);
+  transform: translateY(50%);
+}
+
+/* The grip only appears on approach, so the workspace stays quiet at rest. */
+.resizer__grip {
+  width: 3px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.resizer--row .resizer__grip {
+  width: 28px;
+  height: 3px;
+}
+
+.resizer:hover .resizer__grip,
+.resizer:focus-visible .resizer__grip,
+.resizer.is-dragging .resizer__grip {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.resizer:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* Tracing the divider itself in the accent colour makes the drag legible. */
+.resizer.is-dragging::after {
+  content: '';
+  position: absolute;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.resizer--col.is-dragging::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.resizer--row.is-dragging::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+/* While dragging, the pointer is somewhere else entirely — keep one cursor for
+   the whole window and stop text from getting selected on the way. */
+body.is-resizing-col,
+body.is-resizing-col * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.is-resizing-row,
+body.is-resizing-row * {
+  cursor: row-resize !important;
+  user-select: none !important;
 }
 
 .panel {
@@ -700,7 +817,9 @@ html.dark .vue-flow__attribution a {
 .trace {
   display: flex;
   flex-direction: column;
-  height: 244px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   background: var(--panel);
 }
 

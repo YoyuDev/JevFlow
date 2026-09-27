@@ -7,9 +7,11 @@ import ExecutionTrace from '@/components/ExecutionTrace.vue';
 import FlowCanvas from '@/components/FlowCanvas.vue';
 import NodeConfigPanel from '@/components/NodeConfigPanel.vue';
 import NodeLibrary from '@/components/NodeLibrary.vue';
+import PanelResizer from '@/components/PanelResizer.vue';
 import RunDialog from '@/components/RunDialog.vue';
 import SettingsDialog from '@/components/SettingsDialog.vue';
 import { LOCALE_LABELS, SUPPORTED_LOCALES, isAppLocale } from '@/i18n';
+import { PANE_BOUNDS, useLayoutStore, type PaneKey } from '@/stores/layout';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useProvidersStore } from '@/stores/providers';
 import { useWorkflowStore } from '@/stores/workflow';
@@ -18,6 +20,7 @@ import type { ProviderKind } from '@/types';
 const store = useWorkflowStore();
 const preferences = usePreferencesStore();
 const providers = useProvidersStore();
+const layout = useLayoutStore();
 const { t } = useI18n();
 
 const runDialogVisible = ref(false);
@@ -39,6 +42,45 @@ const jevPill = computed(() => runtimePill('jev'));
 /** How many connections the settings panel is holding — a hint that it is worth opening. */
 const profileCount = computed(() => providers.profiles.length);
 
+/* ------------------------------ resizable panes --------------------------- */
+
+/** The canvas keeps a floor, so no pane can eat the whole window. */
+const MIN_CANVAS_WIDTH = 360;
+const MIN_CANVAS_HEIGHT = 200;
+/** Close enough to the real `app-header` height for the bound to be honest. */
+const HEADER_HEIGHT = 52;
+
+const viewport = ref({ width: window.innerWidth, height: window.innerHeight });
+
+const leftMax = computed(() =>
+  Math.min(PANE_BOUNDS.left.max, viewport.value.width - layout.right - MIN_CANVAS_WIDTH),
+);
+const rightMax = computed(() =>
+  Math.min(PANE_BOUNDS.right.max, viewport.value.width - layout.left - MIN_CANVAS_WIDTH),
+);
+const bottomMax = computed(() =>
+  Math.min(PANE_BOUNDS.bottom.max, viewport.value.height - HEADER_HEIGHT - MIN_CANVAS_HEIGHT),
+);
+
+function resizePane(key: PaneKey, value: number): void {
+  layout.setPane(key, value);
+}
+
+function resetPane(key: PaneKey): void {
+  layout.resetPane(key);
+}
+
+/**
+ * Resizing the window can leave panes past their viewport-relative maximum, so
+ * the bounds get re-applied. Right before left, because `leftMax` reads `right`.
+ */
+function onViewportResize(): void {
+  viewport.value = { width: window.innerWidth, height: window.innerHeight };
+  if (layout.bottom > bottomMax.value) layout.setPane('bottom', bottomMax.value);
+  if (layout.right > rightMax.value) layout.setPane('right', rightMax.value);
+  if (layout.left > leftMax.value) layout.setPane('left', leftMax.value);
+}
+
 const localeOptions = computed(() =>
   SUPPORTED_LOCALES.map((code) => ({ label: LOCALE_LABELS[code], value: code })),
 );
@@ -49,10 +91,13 @@ const themeActionLabel = computed(() =>
 onMounted(() => {
   void store.initialise();
   window.addEventListener('keydown', onKeydown);
+  window.addEventListener('resize', onViewportResize);
+  onViewportResize();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
+  window.removeEventListener('resize', onViewportResize);
 });
 
 function onKeydown(event: KeyboardEvent): void {
@@ -104,7 +149,7 @@ function onRun(input: string): void {
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :style="layout.vars">
     <header class="app-header">
       <div class="brand">
         <span class="brand__mark">JF</span>
@@ -187,9 +232,42 @@ function onRun(input: string): void {
 
     <main class="app-main">
       <NodeLibrary />
+      <PanelResizer
+        class="resizer--left"
+        orientation="vertical"
+        :model-value="layout.left"
+        :min="PANE_BOUNDS.left.min"
+        :max="leftMax"
+        :label="t('layout.resizeNodes')"
+        @update:model-value="resizePane('left', $event)"
+        @reset="resetPane('left')"
+      />
       <FlowCanvas />
+      <PanelResizer
+        class="resizer--right"
+        orientation="vertical"
+        invert
+        :model-value="layout.right"
+        :min="PANE_BOUNDS.right.min"
+        :max="rightMax"
+        :label="t('layout.resizeInspector')"
+        @update:model-value="resizePane('right', $event)"
+        @reset="resetPane('right')"
+      />
       <NodeConfigPanel />
     </main>
+
+    <PanelResizer
+      class="resizer--bottom"
+      orientation="horizontal"
+      invert
+      :model-value="layout.bottom"
+      :min="PANE_BOUNDS.bottom.min"
+      :max="bottomMax"
+      :label="t('layout.resizeTrace')"
+      @update:model-value="resizePane('bottom', $event)"
+      @reset="resetPane('bottom')"
+    />
 
     <ExecutionTrace />
 

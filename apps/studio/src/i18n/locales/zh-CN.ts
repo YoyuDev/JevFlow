@@ -18,6 +18,12 @@ const zhCN = {
     switchToDark: '切换到深色',
   },
 
+  layout: {
+    resizeNodes: '拖拽调整节点库宽度（双击恢复默认）',
+    resizeInspector: '拖拽调整配置面板宽度（双击恢复默认）',
+    resizeTrace: '拖拽调整执行轨迹高度（双击恢复默认）',
+  },
+
   workflow: {
     select: '选择工作流',
     untitled: '未命名工作流',

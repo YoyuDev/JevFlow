@@ -56,7 +56,9 @@ export function defaultConfig(type: NodeType): Record<string, unknown> {
   switch (type) {
     case 'llm':
       return {
-        model: 'mock-model',
+        // Left empty on purpose: the model comes from the connection the node
+        // points at, or from the client default. An override can be typed here.
+        model: '',
         systemPrompt: translate('nodes.llm.defaultSystemPrompt'),
         prompt: '{{input}}',
         temperature: 0.7,
@@ -83,11 +85,15 @@ export function summarizeNode(
   type: NodeType,
   config: Record<string, unknown>,
   t: ComposerTranslation,
+  providerName?: (id: string) => string | undefined,
 ): string {
   const text = (key: string): string => {
     const value = config[key];
     return typeof value === 'string' ? value.trim() : '';
   };
+  /** “DeepSeek / deepseek-chat” — the connection is the interesting part. */
+  const head = (...parts: Array<string | undefined>): string =>
+    parts.filter((part): part is string => Boolean(part)).join(' / ');
 
   switch (type) {
     case 'start':
@@ -95,14 +101,16 @@ export function summarizeNode(
     case 'end':
       return text('output') ? t('nodes.summary.endCustom') : t('nodes.summary.endDefault');
     case 'llm': {
-      const model = text('model') || 'mock-model';
+      const provider = providerName?.(text('providerId'));
+      const name = head(provider, text('model')) || 'mock';
       const prompt = text('prompt') || '{{input}}';
-      return `${model} · ${truncate(prompt, 46)}`;
+      return `${name} · ${truncate(prompt, 40)}`;
     }
     case 'jev': {
+      const provider = providerName?.(text('providerId')) ?? 'mock';
       const question = text('question') || t('nodes.summary.untitledQuestion');
       const choices = Array.isArray(config['choices']) ? config['choices'].length : 0;
-      return `${truncate(question, 40)} · ${t('nodes.summary.choiceCount', { count: choices })}`;
+      return `${provider} · ${truncate(question, 32)} · ${t('nodes.summary.choiceCount', { count: choices })}`;
     }
     case 'tool': {
       const tool = text('tool') || 'search';

@@ -17,12 +17,16 @@ import { resolveJevConfig } from './nodeConfig.js';
  *
  * Output shape (also what the execution trace shows):
  * `{ question, choices, choice, probability, confidence, reason }`
+ *
+ * `config.providerId` picks a named decision connection out of `deps.providers`.
  */
 export class JevNodeExecutor implements NodeExecutor {
   readonly type = 'jev' as const;
 
   async execute({ node, context, deps }: NodeExecutionInput): Promise<NodeExecutionOutput> {
     const config = resolveJevConfig(node);
+    const provider = config.providerId ? deps.providers?.jev(config.providerId) : undefined;
+    const client = provider?.client ?? deps.jev;
     const scope = context.buildScope();
     const question = interpolate(config.question, scope).trim();
 
@@ -38,7 +42,7 @@ export class JevNodeExecutor implements NodeExecutor {
         nodeOutputs: context.nodeOutputs,
         ...(extra ? { extra } : {}),
       };
-      decision = await deps.jev.decide(question, config.choices, jevContext);
+      decision = await client.decide(question, config.choices, jevContext);
     } catch (error) {
       throw toWorkflowError(error, 'JEV_FAILED');
     }
@@ -72,9 +76,10 @@ export class JevNodeExecutor implements NodeExecutor {
         probability: resolved.probability ?? null,
         confidence: resolved.confidence ?? null,
         reason: resolved.reason ?? null,
+        ...(provider ? { provider: provider.label } : {}),
       },
       decision: resolved,
-      meta: { client: deps.jev.name },
+      meta: { client: client.name },
     };
   }
 }

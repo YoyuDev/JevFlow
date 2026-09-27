@@ -34,7 +34,15 @@ export type {
   ExecutionContextSnapshot,
 } from './execution.js';
 
-export type { NodeExecutor, NodeExecutorDeps, NodeExecutionInput, NodeExecutionOutput } from './node.js';
+export type {
+  NodeExecutor,
+  NodeExecutorDeps,
+  NodeExecutionInput,
+  NodeExecutionOutput,
+  NodeProviderResolver,
+  LLMProviderHandle,
+  JevProviderHandle,
+} from './node.js';
 
 export type { LogLevel, LogMeta, Logger } from './logger.js';
 

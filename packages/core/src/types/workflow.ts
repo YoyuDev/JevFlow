@@ -34,6 +34,11 @@ export type LLMNodeConfig = {
 };
 
 export type JevNodeConfig = {
+  /**
+   * Id of a named decision provider this node should use.
+   * Omitted → the engine's default Jev client.
+   */
+  providerId?: string;
   /** The question Jev has to answer about the current workflow state. */
   question?: string;
   /** Allowed answers. The engine routes on whichever one Jev returns. */

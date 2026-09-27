@@ -48,6 +48,9 @@ export type {
   ExecutionContextSnapshot,
   NodeExecutor,
   NodeExecutorDeps,
+  NodeProviderResolver,
+  LLMProviderHandle,
+  JevProviderHandle,
   NodeExecutionInput,
   NodeExecutionOutput,
   LogLevel,
@@ -136,6 +139,10 @@ export {
   createToolRegistry,
 } from './config/factory.js';
 export type { JevFlowConfig, LLMClientConfig, JevClientConfig } from './config/factory.js';
+
+/* ------------------------------ providers ------------------------------- */
+export { ProviderRegistry } from './providers/index.js';
+export type { ProviderProfileLike } from './providers/index.js';
 
 /* --------------------------------- utils -------------------------------- */
 export { interpolate, stringifyValue, extractTokens, resolvePath } from './utils/interpolate.js';

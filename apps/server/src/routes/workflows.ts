@@ -68,8 +68,8 @@ export function registerWorkflowRoutes(app: FastifyInstance, deps: AppDeps): voi
 
   app.post('/api/workflows/:id/run', async (request) => {
     const { id } = request.params as { id: string };
-    const input = parseRunBody(request.body);
-    return deps.workflows.run(id, input);
+    const { input, providers } = parseRunBody(request.body);
+    return deps.workflows.run(id, input, providers);
   });
 
   app.get('/api/workflows/:id/executions', async (request) => {

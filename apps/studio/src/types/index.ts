@@ -119,6 +119,53 @@ export interface RuntimeInfo {
   storage: { provider: 'sqlite'; file: string };
 }
 
+/* -------------------------------- providers ------------------------------- */
+
+/** The two layers a user can point at a real service. */
+export type ProviderKind = 'llm' | 'jev';
+
+/** Credentials for one layer. */
+export interface ProviderCredentials {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+/**
+ * A saved connection. Lives in `localStorage`, never in SQLite — the database is
+ * a file people copy around and an API key has no business being in it.
+ *
+ * Nodes reference one of these by `id`; the credentials themselves only travel
+ * to the server inside a `/run` request.
+ */
+export interface ProviderProfile extends ProviderCredentials {
+  id: string;
+  kind: ProviderKind;
+  /** User-facing label, e.g. “硅基流动 · Qwen”. Also what the trace shows. */
+  name: string;
+}
+
+/** What a profile looks like on the wire. */
+export interface ProviderProfilePayload extends ProviderCredentials {
+  id: string;
+  kind: ProviderKind;
+  label: string;
+}
+
+/** Connections attached to a `/run` request — only the ones the workflow uses. */
+export interface RunProviders {
+  profiles: ProviderProfilePayload[];
+}
+
+export interface ProviderTestResult {
+  ok: boolean;
+  provider: string;
+  latencyMs: number;
+  model?: string;
+  sample?: string;
+  error?: string;
+}
+
 /* ------------------------------- vue flow data ---------------------------- */
 
 /**

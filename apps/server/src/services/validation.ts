@@ -1,7 +1,11 @@
 import type { WorkflowEdge, WorkflowNode } from '@jevflow/core';
 import { isNodeType } from '@jevflow/core';
 import { HttpError } from '../errors.js';
+import type { ProviderProfilePayload, RunProviderSelection } from '../types.js';
 import { isRecord, readString } from '../utils.js';
+
+/** A workflow realistically references a handful; the cap just bounds the body. */
+const MAX_RUN_PROFILES = 50;
 
 export interface ParsedWorkflowBody {
   name?: string;
@@ -119,9 +123,61 @@ function parseEdge(value: unknown, index: number): WorkflowEdge {
   };
 }
 
-/** Extracts the run payload. `{ input: ... }` or a bare value are both accepted. */
-export function parseRunBody(body: unknown): unknown {
-  if (body === undefined || body === null) return { input: '' };
-  if (isRecord(body) && 'input' in body) return body;
-  return { input: body };
+export interface ParsedRunBody {
+  /** Handed to the engine and persisted as the execution input. */
+  input: unknown;
+  /** Present only when the caller sent the connections a run should use. */
+  providers?: RunProviderSelection;
+}
+
+/**
+ * Extracts the run payload. `{ input: ... }` or a bare value are both accepted.
+ *
+ * `providers` is peeled off *before* the rest becomes the input: connections
+ * travel to the engine and never into the execution row written to SQLite.
+ */
+export function parseRunBody(body: unknown): ParsedRunBody {
+  if (body === undefined || body === null) return { input: { input: '' } };
+  if (!isRecord(body)) return { input: { input: body } };
+
+  const providers = parseProviderSelection(body['providers']);
+  const rest: Record<string, unknown> = { ...body };
+  delete rest['providers'];
+
+  return {
+    input: 'input' in rest ? rest : { input: rest },
+    ...(providers ? { providers } : {}),
+  };
+}
+
+/** `undefined` when the caller did not send any connection for this run. */
+function parseProviderSelection(value: unknown): RunProviderSelection | undefined {
+  if (!isRecord(value)) return undefined;
+  const raw = value['profiles'];
+  if (!Array.isArray(raw)) return undefined;
+
+  const profiles = raw
+    .map((item) => parseProfile(item))
+    .filter((item): item is ProviderProfilePayload => item !== null)
+    .slice(0, MAX_RUN_PROFILES);
+  return profiles.length > 0 ? { profiles } : undefined;
+}
+
+/** A malformed entry is dropped rather than rejected: one bad connection must
+ *  not sink an unrelated run, and a node pointing at it simply falls back. */
+function parseProfile(value: unknown): ProviderProfilePayload | null {
+  if (!isRecord(value)) return null;
+  const id = readString(value['id'])?.trim();
+  const kind = value['kind'];
+  if (!id || (kind !== 'llm' && kind !== 'jev')) return null;
+
+  const label = readString(value['label'])?.trim();
+  return {
+    id,
+    kind,
+    apiKey: readString(value['apiKey'])?.trim() ?? '',
+    baseUrl: readString(value['baseUrl'])?.trim() ?? '',
+    model: readString(value['model'])?.trim() ?? '',
+    ...(label ? { label } : {}),
+  };
 }

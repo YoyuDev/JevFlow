@@ -1,6 +1,9 @@
 import { http } from './client.js';
 import type {
   ExecutionDetail,
+  ProviderKind,
+  ProviderTestResult,
+  RunProviders,
   RunResponse,
   RuntimeInfo,
   TraceEntry,
@@ -34,8 +37,11 @@ export const workflowApi = {
     await http.delete(`/workflows/${id}`);
   },
 
-  async run(id: string, input: string): Promise<RunResponse> {
-    const { data } = await http.post<RunResponse>(`/workflows/${id}/run`, { input });
+  async run(id: string, input: string, providers?: RunProviders): Promise<RunResponse> {
+    const { data } = await http.post<RunResponse>(`/workflows/${id}/run`, {
+      input,
+      ...(providers && providers.profiles.length > 0 ? { providers } : {}),
+    });
     return data;
   },
 };
@@ -55,6 +61,25 @@ export const executionApi = {
 export const runtimeApi = {
   async info(): Promise<RuntimeInfo> {
     const { data } = await http.get<RuntimeInfo>('/runtime');
+    return data;
+  },
+};
+
+export interface ProviderTestPayload {
+  kind: ProviderKind;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+/**
+ * Credentials are checked one at a time and never stored server-side — the
+ * endpoint makes a real request and reports what came back, so a typo in a key
+ * or a base URL surfaces before a whole workflow run fails on it.
+ */
+export const providerApi = {
+  async test(payload: ProviderTestPayload): Promise<ProviderTestResult> {
+    const { data } = await http.post<ProviderTestResult>('/providers/test', payload);
     return data;
   },
 };

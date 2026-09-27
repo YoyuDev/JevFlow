@@ -73,12 +73,48 @@ const engine = new WorkflowEngine({
 });
 ```
 
+引擎上那对 `llm` / `jev` 是整个工作流的**默认**。想让不同节点走不同服务时，用 `providers` 注册几张「具名连接」，节点在配置里写上 `providerId` 就行：
+
+```ts
+import { ProviderRegistry, WorkflowEngine } from '@jevflow/core';
+
+const engine = new WorkflowEngine({
+  providers: ProviderRegistry.from([
+    { id: 'fast', kind: 'llm', apiKey: '…', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+    { id: 'smart', kind: 'llm', apiKey: '…', baseUrl: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-72B-Instruct' },
+    { id: 'policy', kind: 'jev', apiKey: '…', baseUrl: 'https://my-jev.internal' },
+  ]),
+});
+
+await engine.run(
+  {
+    /* … */
+    nodes: [
+      { id: 'draft', type: 'llm', position: { x: 0, y: 0 }, config: { providerId: 'fast', prompt: '{{input}}' } },
+      { id: 'polish', type: 'llm', position: { x: 0, y: 120 }, config: { providerId: 'smart', prompt: '{{last}}' } },
+      { id: 'judge', type: 'jev', position: { x: 0, y: 240 }, config: { providerId: 'policy', question: '够好了吗？', choices: ['yes', 'no'] } },
+    ],
+    /* … */
+  },
+  { input: '…' },
+);
+```
+
+几条约定：
+
+- 没写 `providerId` 的节点用引擎上的默认 client；`providerId` 指向一个不存在的连接也一样。
+- 连接里没有 `apiKey` 会退化成对应的 Mock，**不会**让整个 run 失败。
+- `providers` 是可选的 —— 不传时引擎的行为和以前完全一致。
+- 节点里的 `model` 留空就用连接自己的模型；填了就以节点为准（`mock-model` 视为「没填」）。
+- 用到的连接名会写进节点输出的 `provider` 字段，执行记录里能看出这一步到底走了谁。
+
 ## 导出清单
 
 `WorkflowEngine` · `DecisionRouter` · `ExecutionContext` · `ExecutionTrace` ·
 `NodeExecutorRegistry` · `MockLLMClient` · `RealLLMClient` · `MockJevClient` ·
-`RealJevClient` · `ToolRegistry` · `MockSearchTool` · `WorkflowError` ·
-`Workflow` · `WorkflowNode` · `WorkflowEdge` · `DecisionResult`，以及其余全部类型。
+`RealJevClient` · `ProviderRegistry` · `ToolRegistry` · `MockSearchTool` · `WorkflowError` ·
+`Workflow` · `WorkflowNode` · `WorkflowEdge` · `DecisionResult` · `NodeProviderResolver`，
+以及其余全部类型。
 
 ## 环境要求
 

@@ -8,7 +8,8 @@ import type {
 } from '../database/WorkflowRepository.js';
 import { HttpError } from '../errors.js';
 import type { Runtime } from '../runtime/engineFactory.js';
-import type { ExecutionDetailResponse, RunWorkflowResponse } from '../types.js';
+import { createEngineWith } from '../runtime/engineFactory.js';
+import type { ExecutionDetailResponse, RunProviderSelection, RunWorkflowResponse } from '../types.js';
 
 export interface WorkflowServiceDeps {
   workflows: WorkflowRepository;
@@ -69,8 +70,17 @@ export class WorkflowService {
    *
    * Trace lines are written from the engine's `onNodeFinish` hook — so a run that
    * dies halfway still leaves a complete record of how far it got.
+   *
+   * `providers` carries the Studio's saved connections for this one run; when it
+   * is present the engine is rebuilt so nodes can address them by id. Profiles
+   * stay in memory — only `input` is written to SQLite, and a node config holds
+   * nothing but the profile id.
    */
-  async run(id: string, input: unknown): Promise<RunWorkflowResponse> {
+  async run(
+    id: string,
+    input: unknown,
+    providers?: RunProviderSelection,
+  ): Promise<RunWorkflowResponse> {
     const workflow = this.get(id);
     const executionId = createId('exec');
     const startedAt = new Date().toISOString();
@@ -82,7 +92,11 @@ export class WorkflowService {
       startedAt,
     });
 
-    const result = await this.runtime.engine.run(workflow, input, {
+    const engine = providers
+      ? createEngineWith(this.runtime.env, this.runtime.logger, providers)
+      : this.runtime.engine;
+
+    const result = await engine.run(workflow, input, {
       runId: executionId,
       hooks: {
         onNodeFinish: ({ record }) => {

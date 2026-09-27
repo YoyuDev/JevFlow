@@ -24,7 +24,10 @@ import { readNumber, readRecord, readString, readStringArray } from '../utils/va
  */
 
 export interface ResolvedLLMConfig {
-  model: string;
+  /** Which named provider to use. `undefined` → the engine default. */
+  providerId?: string;
+  /** Explicit model pin. `undefined` → the provider's model, then the client default. */
+  model?: string;
   prompt: string;
   systemPrompt?: string;
   temperature: number;
@@ -34,10 +37,15 @@ export interface ResolvedLLMConfig {
 export function resolveLLMConfig(node: WorkflowNode): ResolvedLLMConfig {
   const config = node.config;
   const resolved: ResolvedLLMConfig = {
-    model: readString(config, 'model') ?? DEFAULT_LLM_MODEL,
     prompt: readString(config, 'prompt') ?? DEFAULT_LLM_PROMPT,
     temperature: readNumber(config, 'temperature') ?? DEFAULT_LLM_TEMPERATURE,
   };
+  const providerId = readString(config, 'providerId')?.trim();
+  if (providerId) resolved.providerId = providerId;
+  // `mock-model` is the placeholder a node starts life with — it means "no
+  // opinion", not "ask for a model literally named mock-model".
+  const model = readString(config, 'model')?.trim();
+  if (model && model !== DEFAULT_LLM_MODEL) resolved.model = model;
   const systemPrompt = readString(config, 'systemPrompt');
   if (systemPrompt) resolved.systemPrompt = systemPrompt;
   const maxTokens = readNumber(config, 'maxTokens');
@@ -49,6 +57,8 @@ export function resolveLLMConfig(node: WorkflowNode): ResolvedLLMConfig {
 export type { LLMNodeConfig };
 
 export interface ResolvedJevConfig {
+  /** Which named provider to use. `undefined` → the engine default. */
+  providerId?: string;
   question: string;
   choices: string[];
   contextTemplate?: string;
@@ -61,6 +71,8 @@ export function resolveJevConfig(node: WorkflowNode): ResolvedJevConfig {
     question: readString(config, 'question') ?? DEFAULT_JEV_QUESTION,
     choices,
   };
+  const providerId = readString(config, 'providerId')?.trim();
+  if (providerId) resolved.providerId = providerId;
   const contextTemplate = readString(config, 'contextTemplate');
   if (contextTemplate) resolved.contextTemplate = contextTemplate;
   return resolved;

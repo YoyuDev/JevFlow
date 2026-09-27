@@ -2,21 +2,42 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessageBox } from 'element-plus';
-import { Moon, Sunny } from '@element-plus/icons-vue';
+import { Moon, Setting, Sunny } from '@element-plus/icons-vue';
 import ExecutionTrace from '@/components/ExecutionTrace.vue';
 import FlowCanvas from '@/components/FlowCanvas.vue';
 import NodeConfigPanel from '@/components/NodeConfigPanel.vue';
 import NodeLibrary from '@/components/NodeLibrary.vue';
 import RunDialog from '@/components/RunDialog.vue';
+import SettingsDialog from '@/components/SettingsDialog.vue';
 import { LOCALE_LABELS, SUPPORTED_LOCALES, isAppLocale } from '@/i18n';
 import { usePreferencesStore } from '@/stores/preferences';
+import { useProvidersStore } from '@/stores/providers';
 import { useWorkflowStore } from '@/stores/workflow';
+import type { ProviderKind } from '@/types';
 
 const store = useWorkflowStore();
 const preferences = usePreferencesStore();
+const providers = useProvidersStore();
 const { t } = useI18n();
 
 const runDialogVisible = ref(false);
+const settingsVisible = ref(false);
+
+/**
+ * The pills describe the *server's* own clients. Which connection a particular
+ * node uses is decided on the node itself, so no single pill can summarise a
+ * run any more — they answer “what does `.env` say”, and nothing more.
+ */
+function runtimePill(kind: ProviderKind): { text: string; mock: boolean } {
+  const info = store.runtime?.[kind];
+  return info ? { text: info.provider, mock: info.mock } : { text: '', mock: false };
+}
+
+const llmPill = computed(() => runtimePill('llm'));
+const jevPill = computed(() => runtimePill('jev'));
+
+/** How many connections the settings panel is holding — a hint that it is worth opening. */
+const profileCount = computed(() => providers.profiles.length);
 
 const localeOptions = computed(() =>
   SUPPORTED_LOCALES.map((code) => ({ label: LOCALE_LABELS[code], value: code })),
@@ -114,11 +135,11 @@ function onRun(input: string): void {
       </div>
 
       <div class="app-header__right">
-        <span v-if="store.runtime" class="runtime-pill" :class="{ 'is-mock': store.runtime.llm.mock }">
-          {{ store.runtime.llm.provider }}
+        <span v-if="llmPill.text" class="runtime-pill" :class="{ 'is-mock': llmPill.mock }">
+          {{ llmPill.text }}
         </span>
-        <span v-if="store.runtime" class="runtime-pill" :class="{ 'is-mock': store.runtime.jev.mock }">
-          {{ store.runtime.jev.provider }}
+        <span v-if="jevPill.text" class="runtime-pill" :class="{ 'is-mock': jevPill.mock }">
+          {{ jevPill.text }}
         </span>
         <span v-if="store.dirty" class="dirty-dot">{{ t('workflow.unsaved') }}</span>
         <el-button :loading="store.saving" @click="store.save()">{{ t('workflow.save') }}</el-button>
@@ -149,6 +170,18 @@ function onRun(input: string): void {
             </el-icon>
           </el-button>
         </el-tooltip>
+        <el-tooltip :content="t('settings.title')" placement="bottom">
+          <el-badge :value="profileCount" :hidden="profileCount === 0" class="settings-badge">
+            <el-button
+              class="theme-switch settings-switch"
+              circle
+              :aria-label="t('settings.title')"
+              @click="settingsVisible = true"
+            >
+              <el-icon><Setting /></el-icon>
+            </el-button>
+          </el-badge>
+        </el-tooltip>
       </div>
     </header>
 
@@ -161,5 +194,6 @@ function onRun(input: string): void {
     <ExecutionTrace />
 
     <RunDialog v-model="runDialogVisible" :running="store.running" @run="onRun" />
+    <SettingsDialog v-model="settingsVisible" />
   </div>
 </template>

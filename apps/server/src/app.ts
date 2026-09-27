@@ -1,7 +1,12 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { toApiError } from './errors.js';
-import { registerExecutionRoutes, registerRuntimeRoutes, registerWorkflowRoutes } from './routes/index.js';
+import {
+  registerExecutionRoutes,
+  registerProviderRoutes,
+  registerRuntimeRoutes,
+  registerWorkflowRoutes,
+} from './routes/index.js';
 import type { AppDeps } from './types.js';
 
 /**
@@ -36,6 +41,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerWorkflowRoutes(app, deps);
   registerExecutionRoutes(app, deps);
   registerRuntimeRoutes(app, deps);
+  registerProviderRoutes(app);
 
   app.setNotFoundHandler((request, reply) => {
     void reply.code(404).send({

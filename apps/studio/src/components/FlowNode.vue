@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Handle, Position, type NodeProps } from '@vue-flow/core';
 import { NODE_ACCENTS, summarizeNode } from '@/constants/nodeCatalog';
+import { useProvidersStore } from '@/stores/providers';
 import type { FlowNodeData } from '@/types';
 
 /**
@@ -12,9 +13,14 @@ import type { FlowNodeData } from '@/types';
 const props = defineProps<NodeProps<FlowNodeData>>();
 
 const { t } = useI18n();
+const providers = useProvidersStore();
 
 const accent = computed(() => NODE_ACCENTS[props.data.nodeType]);
-const summary = computed(() => summarizeNode(props.data.nodeType, props.data.config, t));
+// The summary names the connection, so a canvas with two different LLM
+// connections is readable at a glance.
+const summary = computed(() =>
+  summarizeNode(props.data.nodeType, props.data.config, t, (id) => providers.nameOf(id)),
+);
 const status = computed(() => props.data.runStatus ?? null);
 const isStart = computed(() => props.data.nodeType === 'start');
 const isEnd = computed(() => props.data.nodeType === 'end');

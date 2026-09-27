@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessageBox } from 'element-plus';
+import ProviderPicker from '@/components/ProviderPicker.vue';
 import { NODE_ACCENTS } from '@/constants/nodeCatalog';
 import { useWorkflowStore } from '@/stores/workflow';
 import { toast } from '@/utils/toast';
@@ -96,6 +97,11 @@ function choiceInput(index: number): (value: string | number | undefined) => voi
   return (value) => setChoice(index, String(value ?? ''));
 }
 
+/** `ProviderPicker` already narrowed this to a string. */
+function providerInput(value: string): void {
+  set('providerId', value);
+}
+
 function conditionInput(edgeId: string): (value: string | number | undefined) => void {
   return (value) => store.updateEdgeCondition(edgeId, String(value ?? ''));
 }
@@ -167,11 +173,16 @@ async function confirmRemoveEdge(): Promise<void> {
         </template>
 
         <template v-else-if="nodeType === 'llm'">
+          <ProviderPicker
+            kind="llm"
+            :model-value="field('providerId')"
+            @update:model-value="providerInput"
+          />
           <div class="field">
             <label>{{ t('inspector.model') }}</label>
             <el-input
               :model-value="field('model')"
-              placeholder="mock-model"
+              :placeholder="t('inspector.modelPlaceholder')"
               @update:model-value="fieldInput('model')"
             />
           </div>
@@ -207,6 +218,11 @@ async function confirmRemoveEdge(): Promise<void> {
         </template>
 
         <template v-else-if="nodeType === 'jev'">
+          <ProviderPicker
+            kind="jev"
+            :model-value="field('providerId')"
+            @update:model-value="providerInput"
+          />
           <div class="field">
             <label>{{ t('inspector.question') }}</label>
             <el-input

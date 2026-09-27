@@ -260,6 +260,20 @@ code {
   flex: none;
 }
 
+/* Wraps the settings gear so the count badge does not shift the header row. */
+.settings-badge {
+  flex: none;
+  line-height: 0;
+}
+
+.settings-badge .el-badge__content {
+  border: none;
+  font-size: 10px;
+  height: 15px;
+  line-height: 15px;
+  padding: 0 5px;
+}
+
 .runtime-pill {
   padding: 2px 8px;
   border-radius: 999px;
@@ -413,6 +427,11 @@ code {
   color: var(--text-faint);
   font-size: 11px;
   line-height: 1.7;
+}
+
+/* A node pointing at a connection that is missing, or has no key yet. */
+.hint--warn {
+  color: var(--warn-text);
 }
 
 /* --------------------------------- canvas -------------------------------- */
@@ -877,4 +896,118 @@ html.dark .vue-flow__attribution a {
 
 .preset {
   cursor: pointer;
+}
+
+/* -------------------------------- settings ------------------------------- */
+
+/* The panel is a connection *library*: which one a node uses is decided on the
+   node itself, so there is no “current provider” switch here. */
+.settings-note {
+  margin: 0 0 12px;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.settings-empty {
+  margin: 0 0 10px;
+  padding: 16px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.profile-card {
+  padding: 10px 12px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-alt);
+}
+
+.profile-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.profile-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.profile-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile-field--wide {
+  grid-column: 1 / -1;
+}
+
+.profile-field > span {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.profile-card__result {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-card__result.is-ok {
+  color: var(--ok);
+}
+
+.profile-card__result.is-error {
+  color: var(--fail);
+}
+
+.settings-add {
+  width: 100%;
+  border-style: dashed;
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-storage {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.settings-footer__actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
 }

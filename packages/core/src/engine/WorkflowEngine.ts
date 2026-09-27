@@ -16,6 +16,7 @@ import type {
   NodeExecutionRecord,
   NodeExecutor,
   NodeExecutorDeps,
+  NodeProviderResolver,
   RunOptions,
   ToolRegistryLike,
   Workflow,
@@ -40,6 +41,11 @@ export interface WorkflowEngineOptions {
   executors?: NodeExecutor[];
   /** Outgoing-edge resolution. Defaults to a fresh `DecisionRouter`. */
   router?: DecisionRouter;
+  /**
+   * Named providers a node may point at through `config.providerId`.
+   * Omit it and every node uses the engine's default `llm` / `jev`.
+   */
+  providers?: NodeProviderResolver;
   logger?: Logger;
   /** Runaway-loop guard. Defaults to 100 steps. */
   maxSteps?: number;
@@ -82,6 +88,7 @@ export class WorkflowEngine {
   private readonly logger: Logger;
   private readonly router: DecisionRouter;
   private readonly executors: NodeExecutorRegistry;
+  private readonly providers: NodeProviderResolver | undefined;
   private readonly maxSteps: number;
   private hooks: EngineHooks;
 
@@ -92,6 +99,7 @@ export class WorkflowEngine {
     this.logger = options.logger ?? new SilentLogger();
     this.router = options.router ?? new DecisionRouter();
     this.executors = new NodeExecutorRegistry(options.executors ?? createDefaultNodeExecutors());
+    this.providers = options.providers;
     this.maxSteps = options.maxSteps ?? DEFAULT_MAX_STEPS;
     this.hooks = options.hooks ?? {};
   }
@@ -321,6 +329,7 @@ export class WorkflowEngine {
       jev: this.jev,
       tools: this.tools,
       logger: this.logger,
+      ...(this.providers ? { providers: this.providers } : {}),
     };
   }
 

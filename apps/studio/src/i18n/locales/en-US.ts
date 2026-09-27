@@ -77,9 +77,17 @@ const enUS: MessageSchema = {
   inspector: {
     nodeId: 'Node ID',
     label: 'Label',
+    provider: 'Connection',
+    providerDefault: 'Follow the server default',
+    providerEmpty: 'No connections saved yet. Add one via the gear icon, top right.',
+    providerMissing:
+      'The connection “{id}” this node points at is gone; runs fall back to the server default.',
+    providerNoKey: 'This connection has no API key yet, so runs fall back to the mock.',
+    providerModel: 'Model: {model} (used when the node leaves it empty)',
     startHint:
       'Start needs no config. At runtime the user input is pushed to the next node as the entry payload.',
     model: 'Model',
+    modelPlaceholder: 'Empty = use the connection’s model',
     systemPrompt: 'System prompt',
     prompt: 'Prompt',
     temperature: 'Temperature',
@@ -182,6 +190,55 @@ const enUS: MessageSchema = {
     deleteTitle: 'Delete workflow',
     deleteMessage: 'Delete the current workflow? This cannot be undone.',
     delete: 'Delete',
+  },
+
+  settings: {
+    title: 'Connections',
+    hint: 'Keep several LLM / Jev connections here. Which one a node uses is picked on the node itself, under “Connection”.',
+    empty: 'No connections yet. Use “Add connection” below to create one.',
+    incomplete: 'No key',
+    name: 'Name',
+    apiKey: 'API key',
+    apiKeyPlaceholder: 'sk-…',
+    baseUrl: 'Base URL',
+    baseUrlPlaceholder: 'https://api.deepseek.com/v1',
+    model: 'Model',
+    modelPlaceholder: 'deepseek-chat',
+    test: 'Test connection',
+    testOk: 'OK · {ms}ms · {model}',
+    testFailed: 'Connection failed',
+    add: 'Add connection',
+    close: 'Done',
+    usage: 'used by {count} node(s)',
+    unused: 'unused',
+    remove: 'Delete',
+    removeTitle: 'Delete connection',
+    removeConfirm: 'Delete the connection “{name}”?',
+    removeConfirmInUse:
+      '“{name}” is used by {count} node(s); they fall back to the server default once it is gone. Delete anyway?',
+    removeAll: 'Clear all',
+    clearTitle: 'Clear all connections',
+    clearConfirm: 'Remove every saved connection? This cannot be undone.',
+    cancel: 'Cancel',
+    tabs: {
+      llm: 'LLM (generation)',
+      jev: 'Jev (decision)',
+    },
+    hints: {
+      llm: 'Any OpenAI-compatible endpoint works: DeepSeek, SiliconFlow, OpenAI, a local Ollama… With no base URL it defaults to api.openai.com.',
+      jev: 'Needs your own Jev service exposing POST /decide.',
+      storage: 'Connections stay in this browser and are never written to the database.',
+    },
+    usageHint: {
+      llm: 'An LLM node picks one of these under “Node config → Connection”; left empty it follows the server (.env / mock).',
+      jev: 'A Jev node picks one of these under “Node config → Connection”; left empty it follows the server (.env / mock).',
+    },
+    toast: {
+      tested: 'Connection OK · {ms}ms · {provider}',
+      testFailed: 'Connection failed: {error}',
+      removed: 'Deleted connection “{name}”',
+      cleared: 'All connections cleared',
+    },
   },
 };
 

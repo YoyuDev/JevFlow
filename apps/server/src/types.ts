@@ -65,6 +65,32 @@ export interface RuntimeInfoResponse {
   storage: { provider: 'sqlite'; file: string };
 }
 
+/** Credentials for one layer, exactly as the Studio sends them. */
+export interface ProviderCredentials {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+/** One saved connection from the Studio's settings panel. */
+export interface ProviderProfilePayload extends ProviderCredentials {
+  id: string;
+  kind: 'llm' | 'jev';
+  /** Display name; used for trace labelling when present. */
+  label?: string;
+}
+
+/**
+ * Per-run providers coming from the Studio.
+ *
+ * Only the connections a workflow actually references are sent, and a node's
+ * config carries nothing but a profile id — so an API key stays in the browser
+ * until the moment a run needs it, and is never written to SQLite.
+ */
+export interface RunProviderSelection {
+  profiles: ProviderProfilePayload[];
+}
+
 export interface ApiErrorBody {
   error: {
     code: string;

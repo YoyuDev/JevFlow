@@ -5,6 +5,7 @@ import { runtimeApi, workflowApi } from '@/api';
 import { errorMessage } from '@/api/client';
 import { defaultConfig, defaultLabel } from '@/constants/nodeCatalog';
 import { translate } from '@/i18n';
+import { useProvidersStore } from '@/stores/providers';
 import { toast } from '@/utils/toast';
 import type {
   ExecutionRecord,
@@ -38,6 +39,9 @@ function defaultRunInput(): string {
  * places: `toPayload()` on the way out, `toFlowNode()`/`toFlowEdge()` on the way in.
  */
 export const useWorkflowStore = defineStore('workflow', () => {
+  /** The connection library the settings panel fills in and each node picks from. */
+  const providers = useProvidersStore();
+
   /* --------------------------------- state -------------------------------- */
   const summaries = ref<WorkflowSummary[]>([]);
   const current = ref<Workflow | null>(null);
@@ -343,7 +347,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     for (const node of nodes.value) node.data.runStatus = 'running';
 
     try {
-      const response = await workflowApi.run(workflowId, input);
+      // Node configs hold profile ids, not keys. Resolving them here keeps the
+      // credentials out of the workflow definition — and off the disk — while
+      // still sending the server everything the referenced nodes need.
+      const connections = providers.selectionFor(nodes.value.map((node) => node.data.config));
+      const response = await workflowApi.run(workflowId, input, connections);
       lastInput.value = input;
       trace.value = response.trace;
       execution.value = {

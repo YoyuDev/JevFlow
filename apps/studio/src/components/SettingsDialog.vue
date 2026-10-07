@@ -17,7 +17,7 @@ const store = useProvidersStore();
 const workflow = useWorkflowStore();
 const { t } = useI18n();
 
-const KINDS: readonly ProviderKind[] = ['llm', 'jev'];
+const KINDS: readonly ProviderKind[] = ['llm', 'jev', 'api'];
 
 const activeTab = ref<ProviderKind>('llm');
 const testingId = ref<string | null>(null);
@@ -31,15 +31,18 @@ const nodeConfigs = computed(() => workflow.nodes.map((node) => node.data.config
 const tabLabels = computed<Record<ProviderKind, string>>(() => ({
   llm: t('settings.tabs.llm'),
   jev: t('settings.tabs.jev'),
+  api: t('settings.tabs.api'),
 }));
 const kindHints = computed<Record<ProviderKind, string>>(() => ({
   llm: t('settings.hints.llm'),
   jev: t('settings.hints.jev'),
+  api: t('settings.hints.api'),
 }));
 /** Placeholder shown in the node picker varies per layer, so explain both here. */
 const kindUsage = computed<Record<ProviderKind, string>>(() => ({
   llm: t('settings.usageHint.llm'),
   jev: t('settings.usageHint.jev'),
+  api: t('settings.usageHint.api'),
 }));
 
 function close(): void {
@@ -62,6 +65,13 @@ async function onTest(kind: ProviderKind, profile: ProviderProfile): Promise<voi
       apiKey: profile.apiKey,
       baseUrl: profile.baseUrl,
       model: profile.model,
+      ...(kind === 'api'
+        ? {
+            headers: profile.headers,
+            authHeader: profile.authHeader,
+            authScheme: profile.authScheme,
+          }
+        : {}),
     });
     results.value = { ...results.value, [profile.id]: result };
     if (result.ok) {
@@ -119,10 +129,8 @@ function resultText(id: string): string {
   const result = results.value[id];
   if (!result) return '';
   if (!result.ok) return result.error ?? t('settings.testFailed');
-  return t('settings.testOk', {
-    ms: result.latencyMs,
-    model: result.model ?? result.provider,
-  });
+  const detail = result.sample ?? result.model ?? result.provider;
+  return t('settings.testOk', { ms: result.latencyMs, model: detail });
 }
 
 function resultOk(id: string): boolean {
@@ -156,8 +164,8 @@ function resultOk(id: string): boolean {
               class="profile-card__name"
               :placeholder="t('settings.name')"
             />
-            <el-tag v-if="!profile.apiKey.trim()" size="small" type="warning">
-              {{ t('settings.incomplete') }}
+            <el-tag v-if="store.isIncomplete(profile.id)" size="small" type="warning">
+              {{ kind === 'api' ? t('settings.incompleteUrl') : t('settings.incomplete') }}
             </el-tag>
             <el-tag v-if="refCount(profile.id) > 0" size="small" type="success">
               {{ t('settings.usage', { count: refCount(profile.id) }) }}
@@ -166,7 +174,48 @@ function resultOk(id: string): boolean {
             <el-button text type="danger" :icon="Delete" @click="onRemove(profile)" />
           </div>
 
-          <div class="profile-card__grid">
+          <!-- API connections have no model to pick; they have an auth shape. -->
+          <div v-if="kind === 'api'" class="profile-card__grid">
+            <label class="profile-field profile-field--wide">
+              <span>{{ t('settings.baseUrl') }}</span>
+              <el-input v-model="profile.baseUrl" :placeholder="t('settings.apiBaseUrlPlaceholder')" />
+            </label>
+            <label class="profile-field">
+              <span>{{ t('settings.apiKey') }}</span>
+              <el-input
+                v-model="profile.apiKey"
+                type="password"
+                show-password
+                :placeholder="t('settings.apiKeyOptional')"
+              />
+            </label>
+            <label class="profile-field">
+              <span>{{ t('settings.authHeader') }}</span>
+              <el-input
+                v-model="profile.authHeader"
+                :placeholder="t('settings.authHeaderPlaceholder')"
+              />
+            </label>
+            <label class="profile-field">
+              <span>{{ t('settings.authScheme') }}</span>
+              <el-input
+                v-model="profile.authScheme"
+                :placeholder="t('settings.authSchemePlaceholder')"
+              />
+              <small class="profile-field__hint">{{ t('settings.authSchemeHint') }}</small>
+            </label>
+            <label class="profile-field profile-field--wide">
+              <span>{{ t('settings.extraHeaders') }}</span>
+              <el-input
+                v-model="profile.headers"
+                type="textarea"
+                :rows="3"
+                :placeholder="t('settings.extraHeadersPlaceholder')"
+              />
+            </label>
+          </div>
+
+          <div v-else class="profile-card__grid">
             <label class="profile-field">
               <span>{{ t('settings.apiKey') }}</span>
               <el-input

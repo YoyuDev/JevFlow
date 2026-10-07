@@ -76,7 +76,7 @@ function parseNode(value: unknown, index: number): WorkflowNode {
       'INVALID_NODES',
       `nodes[${index}].type "${String(type)}" is not a known node type`,
       {
-        allowed: ['start', 'llm', 'jev', 'tool', 'end'],
+        allowed: ['start', 'llm', 'jev', 'tool', 'http', 'end'],
       },
     );
   }
@@ -169,9 +169,15 @@ function parseProfile(value: unknown): ProviderProfilePayload | null {
   if (!isRecord(value)) return null;
   const id = readString(value['id'])?.trim();
   const kind = value['kind'];
-  if (!id || (kind !== 'llm' && kind !== 'jev')) return null;
+  if (!id || (kind !== 'llm' && kind !== 'jev' && kind !== 'api')) return null;
 
   const label = readString(value['label'])?.trim();
+  const authHeader = readString(value['authHeader'])?.trim();
+  // An empty auth scheme is a real choice (`x-api-key: sk-…`), so this one is
+  // copied through whenever it is present at all — unlike the others.
+  const authScheme = typeof value['authScheme'] === 'string' ? value['authScheme'] : undefined;
+  const headers = readString(value['headers']);
+
   return {
     id,
     kind,
@@ -179,6 +185,9 @@ function parseProfile(value: unknown): ProviderProfilePayload | null {
     baseUrl: readString(value['baseUrl'])?.trim() ?? '',
     model: readString(value['model'])?.trim() ?? '',
     ...(label ? { label } : {}),
+    ...(authHeader ? { authHeader } : {}),
+    ...(authScheme !== undefined ? { authScheme } : {}),
+    ...(headers ? { headers } : {}),
   };
 }
 

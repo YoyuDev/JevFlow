@@ -81,6 +81,12 @@ export interface ProviderTestPayload {
   apiKey: string;
   baseUrl: string;
   model: string;
+  /** API connections only — extra headers, one `Name: value` per line. */
+  headers?: string;
+  /** API connections only — header the key travels in. */
+  authHeader?: string;
+  /** API connections only — prefix before the key. May legitimately be empty. */
+  authScheme?: string;
 }
 
 /**

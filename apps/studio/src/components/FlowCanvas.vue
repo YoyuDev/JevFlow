@@ -13,12 +13,13 @@ import FlowNode from './FlowNode.vue';
 const store = useWorkflowStore();
 const preferences = usePreferencesStore();
 
-/** All five types map to the same component; the type is in `data`. */
+/** Every type maps to the same component; the type lives in `data`. */
 const nodeTypes = {
   start: FlowNode,
   llm: FlowNode,
   jev: FlowNode,
   tool: FlowNode,
+  http: FlowNode,
   end: FlowNode,
 };
 

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessageBox } from 'element-plus';
 import ProviderPicker from '@/components/ProviderPicker.vue';
+import { HTTP_METHODS } from '@/constants/connections';
 import { NODE_ACCENTS } from '@/constants/nodeCatalog';
 import { useWorkflowStore } from '@/stores/workflow';
 import { toast } from '@/utils/toast';
@@ -49,6 +50,21 @@ function numberField(key: string, fallback: number): number {
   const value = config.value[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
+
+function boolField(key: string, fallback: boolean): boolean {
+  const value = config.value[key];
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/** GET cannot carry a body, so the field is hidden rather than silently ignored. */
+const httpHasBody = computed(() => (field('method') || 'GET') !== 'GET');
+
+/** Where a `{{token}}` click lands, per node type. */
+const tokenTarget = computed(() => {
+  if (nodeType.value === 'tool') return 'query';
+  if (nodeType.value === 'http') return 'url';
+  return 'prompt';
+});
 
 function choices(): string[] {
   const value = config.value['choices'];
@@ -291,6 +307,78 @@ async function confirmRemoveEdge(): Promise<void> {
           </div>
         </template>
 
+        <template v-else-if="nodeType === 'http'">
+          <ProviderPicker
+            kind="api"
+            :model-value="field('providerId')"
+            @update:model-value="providerInput"
+          />
+
+          <div class="field">
+            <label>{{ t('inspector.method') }}</label>
+            <el-select
+              :model-value="field('method') || 'GET'"
+              @update:model-value="set('method', $event)"
+            >
+              <el-option v-for="item in HTTP_METHODS" :key="item" :label="item" :value="item" />
+            </el-select>
+          </div>
+
+          <div class="field">
+            <label>{{ t('inspector.url') }}</label>
+            <el-input
+              :model-value="field('url')"
+              :placeholder="t('inspector.urlPlaceholder')"
+              @update:model-value="set('url', $event)"
+            />
+            <p class="hint">{{ t('inspector.urlHint') }}</p>
+          </div>
+
+          <div class="field">
+            <label>{{ t('inspector.headers') }}</label>
+            <el-input
+              type="textarea"
+              :rows="3"
+              :model-value="field('headers')"
+              :placeholder="t('inspector.headersPlaceholder')"
+              @update:model-value="set('headers', $event)"
+            />
+            <p class="hint">{{ t('inspector.headersHint') }}</p>
+          </div>
+
+          <div v-if="httpHasBody" class="field">
+            <label>{{ t('inspector.body') }}</label>
+            <el-input
+              type="textarea"
+              :rows="4"
+              :model-value="field('body')"
+              placeholder='{"query": "{{input}}"}'
+              @update:model-value="set('body', $event)"
+            />
+            <p class="hint">{{ t('inspector.bodyHint') }}</p>
+          </div>
+
+          <div class="field">
+            <label>{{ t('inspector.timeout') }}</label>
+            <el-input-number
+              :model-value="numberField('timeoutMs', 15000)"
+              :min="1000"
+              :max="120000"
+              :step="1000"
+              @update:model-value="set('timeoutMs', $event)"
+            />
+          </div>
+
+          <div class="field">
+            <label>{{ t('inspector.failOnError') }}</label>
+            <el-switch
+              :model-value="boolField('failOnError', true)"
+              @update:model-value="set('failOnError', $event)"
+            />
+            <p class="hint">{{ t('inspector.failOnErrorHint') }}</p>
+          </div>
+        </template>
+
         <template v-else-if="nodeType === 'end'">
           <div class="field">
             <label>{{ t('inspector.outputTemplate') }}</label>
@@ -310,7 +398,7 @@ async function confirmRemoveEdge(): Promise<void> {
               v-for="token in availableVariables"
               :key="token"
               class="variable-token"
-              @click="appendToken(token, nodeType === 'tool' ? 'query' : 'prompt')"
+              @click="appendToken(token, tokenTarget)"
             >
               {{ token }}
             </span>

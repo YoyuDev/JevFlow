@@ -8,6 +8,7 @@ export type WorkflowErrorCode =
   | 'LLM_FAILED'
   | 'JEV_FAILED'
   | 'TOOL_FAILED'
+  | 'HTTP_FAILED'
   | 'NODE_EXECUTION_FAILED'
   | 'MAX_STEPS_EXCEEDED';
 

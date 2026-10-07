@@ -18,6 +18,8 @@ export type {
   LLMNodeConfig,
   JevNodeConfig,
   ToolNodeConfig,
+  HttpNodeConfig,
+  HttpMethod,
   EndNodeConfig,
   NodeConfigMap,
   NodeConfigOf,
@@ -51,6 +53,7 @@ export type {
   NodeProviderResolver,
   LLMProviderHandle,
   JevProviderHandle,
+  ApiProviderHandle,
   NodeExecutionInput,
   NodeExecutionOutput,
   LogLevel,
@@ -73,6 +76,12 @@ export {
   DEFAULT_JEV_QUESTION,
   DEFAULT_JEV_CHOICES,
   DEFAULT_SEARCH_TOOL,
+  DEFAULT_HTTP_METHOD,
+  DEFAULT_HTTP_AUTH_HEADER,
+  DEFAULT_HTTP_AUTH_SCHEME,
+  DEFAULT_HTTP_TIMEOUT_MS,
+  MAX_HTTP_TIMEOUT_MS,
+  HTTP_METHODS,
   CATCH_ALL_CONDITIONS,
 } from './constants.js';
 
@@ -114,17 +123,20 @@ export {
   LLMNodeExecutor,
   JevNodeExecutor,
   ToolNodeExecutor,
+  HttpNodeExecutor,
   EndNodeExecutor,
   resolveLLMConfig,
   resolveJevConfig,
   resolveToolConfig,
+  resolveHttpConfig,
   resolveEndConfig,
 } from './nodes/index.js';
 export type {
   ResolvedLLMConfig,
   ResolvedJevConfig,
   ResolvedToolConfig,
-  ResolvedEndConfig,
+  ResolvedHttpConfig,
+  HttpNodeExecutorOptions,
 } from './nodes/index.js';
 
 /* ------------------------------- execution ------------------------------ */
@@ -146,8 +158,9 @@ export type { ProviderProfileLike } from './providers/index.js';
 
 /* --------------------------------- utils -------------------------------- */
 export { interpolate, stringifyValue, extractTokens, resolvePath } from './utils/interpolate.js';
+export { parseHeaderLines, findHeaderName } from './utils/headers.js';
 export { formatValue, isRecord, truncate, cloneValue } from './utils/value.js';
 export { ConsoleLogger, SilentLogger, createLogger } from './utils/logger.js';
 export { createId } from './utils/id.js';
 export type { FetchLike, FetchInit, FetchResponse } from './utils/fetch.js';
-export { getDefaultFetch } from './utils/fetch.js';
+export { getDefaultFetch, safeReadText } from './utils/fetch.js';

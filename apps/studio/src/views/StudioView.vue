@@ -17,7 +17,6 @@ import { usePreferencesStore } from '@/stores/preferences';
 import { useProjectsStore } from '@/stores/projects';
 import { useProvidersStore } from '@/stores/providers';
 import { useWorkflowStore } from '@/stores/workflow';
-import type { ProviderKind } from '@/types';
 
 const store = useWorkflowStore();
 const preferences = usePreferencesStore();
@@ -34,8 +33,11 @@ const apiVisible = ref(false);
  * The pills describe the *server's* own clients. Which connection a particular
  * node uses is decided on the node itself, so no single pill can summarise a
  * run any more — they answer “what does `.env` say”, and nothing more.
+ *
+ * Only the two model layers have a server-side default; API connections are
+ * supplied per node, so there is nothing for a pill to report.
  */
-function runtimePill(kind: ProviderKind): { text: string; mock: boolean } {
+function runtimePill(kind: 'llm' | 'jev'): { text: string; mock: boolean } {
   const info = store.runtime?.[kind];
   return info ? { text: info.provider, mock: info.mock } : { text: '', mock: false };
 }

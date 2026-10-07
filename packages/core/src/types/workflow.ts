@@ -5,8 +5,8 @@
  * `definition_json`, the runtime consumes unchanged.
  */
 
-/** Node types shipped in phase 1. Everything else is a later phase. */
-export type WorkflowNodeType = 'start' | 'llm' | 'jev' | 'tool' | 'end';
+/** Node types shipped so far. Everything else is a later phase. */
+export type WorkflowNodeType = 'start' | 'llm' | 'jev' | 'tool' | 'http' | 'end';
 
 export interface NodePosition {
   x: number;
@@ -61,12 +61,43 @@ export type EndNodeConfig = {
   output?: string;
 };
 
+/** Verbs the editor offers; any string is accepted at runtime. */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type HttpNodeConfig = {
+  /**
+   * Id of a saved API connection this node should use.
+   * Omitted → `url` has to be absolute, since there is nothing to prefix it with.
+   */
+  providerId?: string;
+  /** Request verb. Defaults to `GET`. */
+  method?: HttpMethod;
+  /**
+   * Path appended to the connection's base URL, or a full `https://…` URL when
+   * no connection is selected. Supports `{{input}}` / `{{node-id}}` templates.
+   */
+  url?: string;
+  /** Extra headers, one `Name: value` per line. Values support templates. */
+  headers?: string;
+  /** Request body, sent for every verb except GET. Supports templates. */
+  body?: string;
+  /** Abort the request after this many ms. Defaults to 15000. */
+  timeoutMs?: number;
+  /**
+   * `true` (default) → a non-2xx response fails the node.
+   * `false` → the response is passed downstream as `{ ok: false, status, body }`,
+   * which is how you let a Jev node branch on “the API said no”.
+   */
+  failOnError?: boolean;
+};
+
 /** Maps a node type to its config shape. Handy for building workflows in code. */
 export interface NodeConfigMap {
   start: StartNodeConfig;
   llm: LLMNodeConfig;
   jev: JevNodeConfig;
   tool: ToolNodeConfig;
+  http: HttpNodeConfig;
   end: EndNodeConfig;
 }
 

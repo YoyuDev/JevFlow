@@ -1,19 +1,26 @@
 import {
+  DEFAULT_HTTP_METHOD,
+  DEFAULT_HTTP_TIMEOUT_MS,
   DEFAULT_JEV_CHOICES,
   DEFAULT_JEV_QUESTION,
   DEFAULT_LLM_MODEL,
   DEFAULT_LLM_PROMPT,
   DEFAULT_LLM_TEMPERATURE,
   DEFAULT_SEARCH_TOOL,
+  HTTP_METHODS,
+  MAX_HTTP_TIMEOUT_MS,
 } from '../constants.js';
 import type {
   EndNodeConfig,
+  HttpMethod,
+  HttpNodeConfig,
   JevNodeConfig,
   LLMNodeConfig,
   ToolNodeConfig,
   WorkflowNode,
 } from '../types/index.js';
-import { readNumber, readRecord, readString, readStringArray } from '../utils/value.js';
+import { parseHeaderLines } from '../utils/headers.js';
+import { readBoolean, readNumber, readRecord, readString, readStringArray } from '../utils/value.js';
 
 /**
  * Config readers.
@@ -96,6 +103,55 @@ export function resolveToolConfig(node: WorkflowNode): ResolvedToolConfig {
 }
 
 export type { ToolNodeConfig };
+
+export interface ResolvedHttpConfig {
+  /** Which saved API connection to send through. `undefined` → `url` must be absolute. */
+  providerId?: string;
+  method: HttpMethod;
+  /** Path or absolute URL. Still an un-interpolated template at this point. */
+  url: string;
+  /** Extra headers the node adds on top of the connection's. Values still templated. */
+  headers: Record<string, string>;
+  body?: string;
+  timeoutMs: number;
+  failOnError: boolean;
+}
+
+/**
+ * Note the verb is normalised to upper case but *not* whitelisted: the editor
+ * offers five, and a workflow written by hand may legitimately use `HEAD`.
+ */
+export function resolveHttpConfig(node: WorkflowNode): ResolvedHttpConfig {
+  const config = node.config;
+  const providerId = readString(config, 'providerId')?.trim();
+  const method = normalizeMethod(readString(config, 'method'));
+  const body = readString(config, 'body');
+  const timeoutMs = clampTimeout(readNumber(config, 'timeoutMs'));
+
+  return {
+    ...(providerId ? { providerId } : {}),
+    method,
+    url: readString(config, 'url') ?? '',
+    headers: parseHeaderLines(readString(config, 'headers')),
+    ...(body ? { body } : {}),
+    timeoutMs,
+    failOnError: readBoolean(config, 'failOnError') ?? true,
+  };
+}
+
+export type { HttpNodeConfig };
+
+function normalizeMethod(value: string | undefined): HttpMethod {
+  const upper = value?.trim().toUpperCase() ?? '';
+  const known = HTTP_METHODS.find((item) => item === upper);
+  return (known ?? DEFAULT_HTTP_METHOD) as HttpMethod;
+}
+
+/** A missing or nonsense timeout becomes the default; an absurd one is capped. */
+function clampTimeout(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value) || value <= 0) return DEFAULT_HTTP_TIMEOUT_MS;
+  return Math.min(Math.round(value), MAX_HTTP_TIMEOUT_MS);
+}
 
 export interface ResolvedEndConfig {
   output?: string;

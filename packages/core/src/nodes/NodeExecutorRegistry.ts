@@ -7,6 +7,7 @@ import type {
 } from '../types/index.js';
 import { WorkflowError } from '../types/index.js';
 import { EndNodeExecutor } from './EndNodeExecutor.js';
+import { HttpNodeExecutor } from './HttpNodeExecutor.js';
 import { JevNodeExecutor } from './JevNodeExecutor.js';
 import { LLMNodeExecutor } from './LLMNodeExecutor.js';
 import { StartNodeExecutor } from './StartNodeExecutor.js';
@@ -54,13 +55,14 @@ export class NodeExecutorRegistry {
   }
 }
 
-/** The five phase-1 executors. */
+/** Every executor that ships with the package. */
 export function createDefaultNodeExecutors(): NodeExecutor[] {
   return [
     new StartNodeExecutor(),
     new LLMNodeExecutor(),
     new JevNodeExecutor(),
     new ToolNodeExecutor(),
+    new HttpNodeExecutor(),
     new EndNodeExecutor(),
   ];
 }

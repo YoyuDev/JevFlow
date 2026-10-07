@@ -21,13 +21,14 @@ JevFlow 不是一个 AI 聊天站，也不是流程图工具。它是一套很�
 ## 功能特性
 
 - **可视化编辑器** —— 把节点拖到 Vue Flow 画布上连线，在右侧面板配置。
-- **五种节点** —— `Start` · `LLM` · `Jev` · `Tool` · `End`。
+- **六种节点** —— `Start` · `LLM` · `Jev` · `Tool` · `HTTP` · `End`。
 - **Jev 决策节点** —— 一个问题加一组固定选项，返回 `choice` / `probability` / `confidence`。
 - **决策路由** —— 引擎按决策结果挑出对应的出边；没匹配上就明确报错，绝不悄悄猜一条。
 - **完整执行记录** —— 每个节点的状态、输入、输出、耗时和决策，全部落进 SQLite。
 - **完全离线可跑** —— 内置 mock LLM、mock Jev、mock search，`.env` 空着也能跑 Demo。
-- **按节点选连接** —— 设置里存多套 LLM / Jev 连接，每个节点各挑一套；密钥只留在浏览器，运行时按次下发。
+- **按节点选连接** —— 设置里存多套 LLM / Jev / API 连接，每个节点各挑一套；密钥只留在浏览器，运行时按次下发。
 - **工作流即 API** —— 把工作流发布成一个 HTTP 端点，别的服务拿着 token 就能调用并拿到结果；调用方不需要知道任何 API Key。
+- **反向也通** —— `HTTP` 节点让工作流自己去调别人的接口：选一条连接，配 method / 路径 / 请求体，响应直接交给下游节点。
 - **可独立发布的 core** —— `@jevflow/core` 零运行时依赖，可以直接嵌进任何 Node.js 项目。
 - **中文优先，可切英文** —— 界面默认简体中文，右上角一键切换；文案走 i18n，不写死在组件里。
 - **浅色 / 深色主题** —— 首次访问跟随系统，用户选过之后记住选择，刷新不闪白。
@@ -51,9 +52,9 @@ JevFlow 不是一个 AI 聊天站，也不是流程图工具。它是一套很�
 │  @jevflow/core                                                         │
 │    WorkflowEngine ─ DecisionRouter ─ ExecutionContext ─ ExecutionTrace │
 │         │                                                              │
-│    NodeExecutors：Start · LLM · Jev · Tool · End                        │
+│    NodeExecutors：Start · LLM · Jev · Tool · HTTP · End                 │
 │         │                                                              │
-│    LLMClient   ·  JevClient   ·  ToolRegistry                          │
+│    LLMClient   ·  JevClient   ·  ToolRegistry   ·  fetch（内置）        │
 │    ├ MockLLMClient   ├ MockJevClient   └ MockSearchTool   （离线）      │
 │    └ RealLLMClient   └ RealJevClient   └ 你自己的工具      （配了 key） │
 └────────────────────────────────────────────────────────────────────────┘
@@ -186,6 +187,7 @@ const workflow: Workflow = {
 | `{{<节点 id>}}` | 任意一个更早节点的输出，例如 `{{llm-1}}` |
 | `{{lastLLM}}` | 最近一次 LLM 回答的纯文本 |
 | `{{lastTool}}` | 最近一次工具调用的结果 |
+| `{{lastHttp}}` | 最近一次 HTTP 调用的响应（能当 JSON 就已是对象） |
 
 ## Jev 决策
 
@@ -237,9 +239,9 @@ LLM_MODEL=
 
 Studio 右上角的齿轮就是干这个的：
 
-1. 在「连接配置」里存下若干套连接（名称 / API Key / Base URL / 模型），LLM 与 Jev 分开两个页签；
+1. 在「连接配置」里存下若干套连接（名称 / API Key / Base URL / 模型），LLM、Jev、API 分成三个页签；
 2. 每张卡片都能单独「测试连接」，也能看到它**被几个节点在用**；
-3. 选中一个 LLM / Jev 节点，在右侧「节点配置 → 连接」里挑这一套。
+3. 选中一个 LLM / Jev / HTTP 节点，在右侧「节点配置 → 连接」里挑这一套。
 
 不选就是「跟随服务端默认」，也就是 `.env`，没有 `.env` 就是 Mock。所以老工作流不用改任何东西。
 
@@ -249,6 +251,44 @@ Studio 右上角的齿轮就是干这个的：
 - 运行时只有**被节点引用到的**那几套连接会随请求发出去，服务端也是用完即弃，只把 `input` 写进库。
 - 节点配置里存的只是**连接 id**，所以导出的工作流 JSON 可以放心分享。
 - 连接被删掉、或忘了填 Key，节点会安全回落到默认 / Mock，并在配置面板给出黄色提示，而不是运行到一半报错。
+
+### HTTP 节点（工作流去调别人的接口）
+
+前面那节是「别人调用工作流」；`HTTP` 节点是反方向 —— **工作流自己去调别人的接口**，把响应交给下游。
+
+配置分两半，各管各的：
+
+| 谁 | 管什么 |
+| --- | --- |
+| **API 连接**（设置里） | Base URL、鉴权怎么加（头名 + 前缀）、所有请求都带的固定头 |
+| **HTTP 节点**（画布上） | method、路径、额外头、请求体、超时、非 2xx 怎么办 |
+
+这么分的好处很实在：把整套流程从测试环境切到生产，或者轮换一个密钥，都是**设置里的改动，不用动画布**。
+
+```ts
+{
+  type: 'http',
+  config: {
+    providerId: 'api-audit',           // 指向设置里的一条 API 连接
+    method: 'POST',
+    url: '/v1/tickets?q={{input}}',    // 相对路径，拼在 Base URL 后面
+    headers: 'x-org: acme',            // 一行一个「名称: value」
+    body: '{"question": "{{input}}"}',
+    timeoutMs: 15000,
+    failOnError: true,
+  },
+}
+```
+
+`url` 写成完整的 `https://…` 时**不选连接也能跑** —— 这一条是为了让 `@jevflow/core` 在没有 registry 的嵌入场景里照样能用。
+
+几个行为上的约定：
+
+- 鉴权默认是 `Authorization: Bearer <key>`；连接里把前缀留空，就变成 `x-api-key: <key>` 那种写法。
+- 请求体只对 `GET` 之外的方法发送；带了请求体又没自己写 `content-type`，会自动补 `application/json`。
+- 节点里写的同名头**覆盖**连接里的 —— 连接给默认，节点给特例。
+- 响应能解析成 JSON 就当对象，否则原样给字符串，都是下游节点看到的输出。
+- **非 2xx 默认让节点失败**，错误信息里带状态码和响应片段。关掉 `failOnError` 之后，非 2xx 会作为 `{ ok: false, status, body }` 交给下游 —— 这样「尽力调一下，失败也别停」用 Jev 节点就能表达。
 
 ### 对外 API（把工作流接进你自己的代码）
 
@@ -378,7 +418,7 @@ workflow_endpoints workflow_id, token, enabled, providers_json, published_at,
 
 ## 后续规划
 
-- **更多节点类型** —— Agent、RAG、HTTP、Code、人工审核、Condition、MCP。
+- **更多节点类型** —— Agent、RAG、Code、人工审核、Condition、MCP。
 - **流式运行** —— 用 SSE 实时推执行记录，画布边跑边亮。
 - **`create-jevflow`** —— `npx create-jevflow my-agent` 脚手架。
 - **真实 Jev 接入** —— 把托管决策 API 做成一级配置项。

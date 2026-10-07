@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
+import { DEFAULT_API_AUTH_HEADER, DEFAULT_API_AUTH_SCHEME } from '@/constants/connections';
 import type {
-  ProviderCredentials,
   ProviderKind,
   ProviderProfile,
   ProviderProfilePayload,
@@ -19,7 +19,7 @@ function emptyState(): StoredProviders {
 }
 
 /**
- * A library of LLM / Jev connections, held in `localStorage`.
+ * A library of LLM / Jev / API connections, held in `localStorage`.
  *
  * This store is deliberately *not* a “current provider” switch: a workflow
  * usually wants node A on one vendor and node B on another, so the choice lives
@@ -36,9 +36,12 @@ export const useProvidersStore = defineStore('providers', () => {
   /* -------------------------------- getters ------------------------------- */
   const llmProfiles = computed(() => profiles.value.filter((item) => item.kind === 'llm'));
   const jevProfiles = computed(() => profiles.value.filter((item) => item.kind === 'jev'));
+  const apiProfiles = computed(() => profiles.value.filter((item) => item.kind === 'api'));
 
   function profilesOf(kind: ProviderKind): ProviderProfile[] {
-    return kind === 'llm' ? llmProfiles.value : jevProfiles.value;
+    if (kind === 'llm') return llmProfiles.value;
+    if (kind === 'jev') return jevProfiles.value;
+    return apiProfiles.value;
   }
 
   function byId(id: string): ProviderProfile | undefined {
@@ -50,32 +53,51 @@ export const useProvidersStore = defineStore('providers', () => {
     return id ? byId(id)?.name : undefined;
   }
 
-  /** A connection with no key silently runs as the mock — the UI says so. */
+  /**
+   * Whether a connection is missing the one thing it cannot run without.
+   *
+   * For the model layers that is the key — without one they silently run as the
+   * mock. For an API connection a key is optional (plenty of public APIs have
+   * none), so what matters is the base URL.
+   */
   function isIncomplete(id: string): boolean {
     const profile = byId(id);
-    return profile !== undefined && profile.apiKey.trim().length === 0;
+    if (!profile) return false;
+    return profile.kind === 'api'
+      ? profile.baseUrl.trim().length === 0
+      : profile.apiKey.trim().length === 0;
   }
 
   /* -------------------------------- actions ------------------------------- */
   /** Adds a blank connection and returns it, so the panel can focus its name. */
   function addProfile(kind: ProviderKind): ProviderProfile {
+    const index = profilesOf(kind).length + 1;
     const profile: ProviderProfile = {
       id: createProfileId(kind),
       kind,
-      name: `${kind === 'llm' ? 'LLM' : 'Jev'} ${profilesOf(kind).length + 1}`,
+      name: defaultName(kind, index),
       apiKey: '',
       baseUrl: '',
       model: '',
+      // Pre-filled rather than left blank on purpose: these are saved values, so
+      // what the field shows is exactly what gets sent — including an empty
+      // scheme, which is how `x-api-key: sk-…` style APIs are authenticated.
+      authHeader: kind === 'api' ? DEFAULT_API_AUTH_HEADER : '',
+      authScheme: kind === 'api' ? DEFAULT_API_AUTH_SCHEME : '',
+      headers: '',
     };
     profiles.value = [...profiles.value, profile];
     return profile;
   }
 
-  function updateProfile(id: string, patch: Partial<ProviderCredentials> & { name?: string }): void {
+  function updateProfile(
+    id: string,
+    patch: Partial<Omit<ProviderProfile, 'id' | 'kind'>>,
+  ): void {
     const index = profiles.value.findIndex((item) => item.id === id);
     if (index < 0) return;
     const next = [...profiles.value];
-    next[index] = { ...next[index], ...patch } as ProviderProfile;
+    next[index] = { ...next[index], ...patch };
     profiles.value = next;
   }
 
@@ -112,6 +134,13 @@ export const useProvidersStore = defineStore('providers', () => {
         apiKey: profile.apiKey,
         baseUrl: profile.baseUrl,
         model: profile.model,
+        ...(profile.kind === 'api'
+          ? {
+              authHeader: profile.authHeader,
+              authScheme: profile.authScheme,
+              headers: profile.headers,
+            }
+          : {}),
       }));
 
     return { profiles: payload };
@@ -131,6 +160,7 @@ export const useProvidersStore = defineStore('providers', () => {
     // getters
     llmProfiles,
     jevProfiles,
+    apiProfiles,
     // actions
     profilesOf,
     byId,
@@ -179,9 +209,12 @@ function writeStored(state: StoredProviders): void {
 function toProfile(value: unknown): ProviderProfile | null {
   if (!isRecord(value)) return null;
   const kind = value['kind'];
-  if (kind !== 'llm' && kind !== 'jev') return null;
+  if (kind !== 'llm' && kind !== 'jev' && kind !== 'api') return null;
   const id = readString(value['id']);
   if (!id) return null;
+  // Connections saved before API connections existed simply have none of these
+  // fields; an API profile defaults them to the same values `addProfile` uses.
+  const api = kind === 'api';
   return {
     id,
     kind,
@@ -189,7 +222,16 @@ function toProfile(value: unknown): ProviderProfile | null {
     apiKey: readString(value['apiKey']) ?? '',
     baseUrl: readString(value['baseUrl']) ?? '',
     model: readString(value['model']) ?? '',
+    authHeader: readString(value['authHeader']) ?? (api ? DEFAULT_API_AUTH_HEADER : ''),
+    authScheme: readString(value['authScheme']) ?? (api ? DEFAULT_API_AUTH_SCHEME : ''),
+    headers: readString(value['headers']) ?? '',
   };
+}
+
+function defaultName(kind: ProviderKind, index: number): string {
+  if (kind === 'llm') return `LLM ${index}`;
+  if (kind === 'jev') return `Jev ${index}`;
+  return `API ${index}`;
 }
 
 function createProfileId(kind: ProviderKind): string {

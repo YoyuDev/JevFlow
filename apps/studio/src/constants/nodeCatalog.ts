@@ -12,7 +12,7 @@ export interface NodeCatalogItem {
 export const NODE_CATALOG_GROUPS: readonly NodeGroup[] = ['trigger', 'ai', 'tools', 'control'];
 
 /**
- * The node palette. Phase 1 ships exactly these five.
+ * The node palette.
  *
  * Only structural facts live here — every human-readable string is a message
  * key (`nodes.<type>.label`, `nodes.groups.<group>`), so the palette follows the
@@ -23,6 +23,7 @@ export const NODE_CATALOG: readonly NodeCatalogItem[] = [
   { type: 'llm', group: 'ai' },
   { type: 'jev', group: 'ai' },
   { type: 'tool', group: 'tools' },
+  { type: 'http', group: 'tools' },
   { type: 'end', group: 'control' },
 ];
 
@@ -31,6 +32,7 @@ export const NODE_ACCENTS: Record<NodeType, string> = {
   llm: '#7c3aed',
   jev: '#f59e0b',
   tool: '#10b981',
+  http: '#e11d48',
   end: '#64748b',
 };
 
@@ -72,6 +74,17 @@ export function defaultConfig(type: NodeType): Record<string, unknown> {
       return {
         tool: 'search',
         query: '{{input}}',
+      };
+    case 'http':
+      return {
+        // No connection selected: an empty base URL means the path below has to
+        // be a full URL, which the config panel says out loud.
+        method: 'GET',
+        url: '',
+        headers: '',
+        body: '',
+        timeoutMs: 15000,
+        failOnError: true,
       };
     case 'start':
     case 'end':
@@ -116,6 +129,13 @@ export function summarizeNode(
       const tool = text('tool') || 'search';
       const query = text('query') || '{{input}}';
       return `${tool} · ${truncate(query, 40)}`;
+    }
+    case 'http': {
+      // Mirrors the LLM row: connection first, then the verb, then the path.
+      const connection = providerName?.(text('providerId'));
+      const method = text('method') || 'GET';
+      const url = text('url') || t('nodes.summary.httpNoUrl');
+      return `${head(connection, method)} · ${truncate(url, 34)}`;
     }
     default:
       return '';

@@ -1083,6 +1083,12 @@ html.dark .vue-flow__attribution a {
   letter-spacing: 0.05em;
 }
 
+.profile-field__hint {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .profile-card__footer {
   display: flex;
   align-items: center;

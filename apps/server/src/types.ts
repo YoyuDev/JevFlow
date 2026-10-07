@@ -75,9 +75,15 @@ export interface ProviderCredentials {
 /** One saved connection from the Studio's settings panel. */
 export interface ProviderProfilePayload extends ProviderCredentials {
   id: string;
-  kind: 'llm' | 'jev';
+  kind: 'llm' | 'jev' | 'api';
   /** Display name; used for trace labelling when present. */
   label?: string;
+  /** API connections only — header the key travels in. Default `Authorization`. */
+  authHeader?: string;
+  /** API connections only — prefix before the key; `''` for an `x-api-key` style header. */
+  authScheme?: string;
+  /** API connections only — extra headers, one `Name: value` per line. */
+  headers?: string;
 }
 
 /**

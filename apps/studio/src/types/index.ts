@@ -1,6 +1,6 @@
 /** Studio-side mirror of the runtime contract (`@jevflow/core` + server API). */
 
-export type NodeType = 'start' | 'llm' | 'jev' | 'tool' | 'end';
+export type NodeType = 'start' | 'llm' | 'jev' | 'tool' | 'http' | 'end';
 
 export interface NodePosition {
   x: number;
@@ -121,10 +121,15 @@ export interface RuntimeInfo {
 
 /* -------------------------------- providers ------------------------------- */
 
-/** The two layers a user can point at a real service. */
-export type ProviderKind = 'llm' | 'jev';
+/**
+ * The layers a user can point at a real service.
+ *
+ * `llm` and `jev` are model calls; `api` is a plain HTTP endpoint that the
+ * 「HTTP 请求」node talks to — same library, different job.
+ */
+export type ProviderKind = 'llm' | 'jev' | 'api';
 
-/** Credentials for one layer. */
+/** Credentials for one layer. `api` connections leave `model` empty. */
 export interface ProviderCredentials {
   apiKey: string;
   baseUrl: string;
@@ -143,6 +148,15 @@ export interface ProviderProfile extends ProviderCredentials {
   kind: ProviderKind;
   /** User-facing label, e.g. “硅基流动 · Qwen”. Also what the trace shows. */
   name: string;
+  /** `api` only — header the key travels in. Empty falls back to `Authorization`. */
+  authHeader: string;
+  /**
+   * `api` only — prefix before the key. Defaults to `"Bearer "` when the
+   * connection is created; an empty string is a real choice (`x-api-key: sk-…`).
+   */
+  authScheme: string;
+  /** `api` only — extra headers, one `Name: value` per line. */
+  headers: string;
 }
 
 /** What a profile looks like on the wire. */
@@ -150,6 +164,9 @@ export interface ProviderProfilePayload extends ProviderCredentials {
   id: string;
   kind: ProviderKind;
   label: string;
+  authHeader?: string;
+  authScheme?: string;
+  headers?: string;
 }
 
 /** Connections attached to a `/run` request — only the ones the workflow uses. */

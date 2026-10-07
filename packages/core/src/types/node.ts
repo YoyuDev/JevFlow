@@ -21,6 +21,28 @@ export interface JevProviderHandle {
 }
 
 /**
+ * A plain HTTP endpoint plus the defaults its requests inherit.
+ *
+ * Unlike the LLM and Jev layers there is no client here — just the facts a
+ * request needs. The node decides the verb, path and body; the connection owns
+ * the base URL and how the secret is attached, so rotating a key or moving to a
+ * staging host never means editing the workflow.
+ */
+export interface ApiProviderHandle {
+  /** Prefix the node's `url` is resolved against. Empty → the url must be absolute. */
+  baseUrl: string;
+  apiKey?: string;
+  /** Header the key travels in. Defaults to `Authorization`. */
+  authHeader?: string;
+  /** Prefix before the key — `Bearer `, `token `, or `''` for an `x-api-key` style header. */
+  authScheme?: string;
+  /** Extra headers every request through this connection should carry. */
+  headers?: Record<string, string>;
+  /** Human label, surfaced in the execution trace. */
+  label: string;
+}
+
+/**
  * Looks a provider up by the id a node carries in `config.providerId`.
  *
  * Optional everywhere: an engine with no registry behaves exactly as it did
@@ -29,6 +51,12 @@ export interface JevProviderHandle {
 export interface NodeProviderResolver {
   llm(id: string): LLMProviderHandle | undefined;
   jev(id: string): JevProviderHandle | undefined;
+  /**
+   * HTTP connections. Optional so a resolver written before API connections
+   * existed still satisfies this interface — an `http` node then just has to
+   * carry an absolute URL instead of pointing at a connection.
+   */
+  api?(id: string): ApiProviderHandle | undefined;
 }
 
 /** Everything a node executor may depend on. */

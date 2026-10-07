@@ -5,6 +5,8 @@ export type {
   LLMNodeConfig,
   JevNodeConfig,
   ToolNodeConfig,
+  HttpNodeConfig,
+  HttpMethod,
   EndNodeConfig,
   NodeConfigMap,
   NodeConfigOf,
@@ -42,6 +44,7 @@ export type {
   NodeProviderResolver,
   LLMProviderHandle,
   JevProviderHandle,
+  ApiProviderHandle,
 } from './node.js';
 
 export type { LogLevel, LogMeta, Logger } from './logger.js';

@@ -284,6 +284,66 @@ const enUS: MessageSchema = {
       cleared: 'All connections cleared',
     },
   },
+
+  endpoint: {
+    open: 'Public API',
+    title: 'Public API',
+    hint: 'Publish this workflow as an HTTP endpoint. Anyone holding the token can call it and get the result back.',
+    draftHint: 'This project is not saved yet. Save it from the header first, then come back to publish.',
+    notPublished: 'Not published',
+    published: 'Published',
+    paused: 'Paused',
+    loading: 'loading…',
+    introNote:
+      'Publishing stores the connections this workflow uses on the server (encrypted). Callers need nothing but the token — no API keys.',
+    publish: 'Publish as API',
+    republish: 'Update credentials',
+    pause: 'Pause',
+    resume: 'Resume',
+    rotate: 'Rotate token',
+    rotateTitle: 'Rotate the token',
+    rotateConfirm:
+      'The old token stops working immediately, and any code already using it must be updated. Continue?',
+    revoke: 'Revoke',
+    revokeTitle: 'Revoke the public endpoint',
+    revokeConfirm:
+      'Revoking kills the token instantly — existing callers start getting 401s. This cannot be undone. Continue?',
+    url: 'Endpoint',
+    token: 'Token',
+    show: 'Show',
+    hide: 'Hide',
+    credentials: 'Run credentials',
+    credentialsCount: '{count} connection(s): {names}',
+    credentialsEmpty: 'No connection bound — runs use the server’s .env configuration.',
+    credentialsUnreadable:
+      'Saved credentials cannot be decrypted on this machine (JEVFLOW_SECRET changed). Use “Update credentials” to republish.',
+    fallbackMock:
+      'The server is running offline mocks, so callers get simulated results. Use “Update credentials” to store your connections.',
+    usedAt: 'Activity',
+    callCount: '{count} call(s)',
+    errorCount: '{count} failed',
+    lastCalled: 'Last called {time}',
+    neverCalled: 'Not called yet',
+    examples: 'Example',
+    syncHint:
+      'Synchronous by default. Add ?mode=async to get an executionId back immediately (202), then poll GET /api/v1/executions/{id}.',
+    securityNote:
+      'The token is stored in plain text in the local database so you can look it up later. Do not expose this server to the public internet.',
+    storage: 'Endpoints live in the local SQLite file; credentials are encrypted at rest.',
+    cancel: 'Cancel',
+    close: 'Done',
+    toast: {
+      published: 'Public API published',
+      republished: 'Run credentials updated',
+      paused: 'Public API paused',
+      resumed: 'Public API resumed',
+      revoked: 'Public API revoked',
+      rotated: 'New token generated',
+      copied: 'Copied to clipboard',
+      copyFailed: 'Copy failed — select the text and copy it manually',
+      failed: 'Failed: {error}',
+    },
+  },
 };
 
 export default enUS;

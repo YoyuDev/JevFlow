@@ -181,3 +181,52 @@ function parseProfile(value: unknown): ProviderProfilePayload | null {
     ...(label ? { label } : {}),
   };
 }
+
+export interface ParsedEndpointBody {
+  /** Present only when the Studio sent a snapshot of the connections in use. */
+  providers?: ProviderProfilePayload[];
+  rotate?: boolean;
+  enabled?: boolean;
+}
+
+/**
+ * Validates a publish/update request for a workflow's public endpoint.
+ *
+ * An empty body is legal and means “publish with whatever is already stored”,
+ * which is what a republish after a name change looks like.
+ */
+export function parseEndpointBody(body: unknown): ParsedEndpointBody {
+  if (body === undefined || body === null) return {};
+  if (!isRecord(body)) {
+    throw HttpError.badRequest('INVALID_BODY', 'Request body must be a JSON object');
+  }
+
+  const parsed: ParsedEndpointBody = {};
+
+  if (body['providers'] !== undefined) {
+    const raw = body['providers'];
+    if (!Array.isArray(raw)) {
+      throw HttpError.badRequest('INVALID_PROVIDERS', '`providers` must be an array');
+    }
+    parsed.providers = raw
+      .map((item) => parseProfile(item))
+      .filter((item): item is ProviderProfilePayload => item !== null)
+      .slice(0, MAX_RUN_PROFILES);
+  }
+
+  if (body['rotate'] !== undefined) {
+    if (typeof body['rotate'] !== 'boolean') {
+      throw HttpError.badRequest('INVALID_ROTATE', '`rotate` must be a boolean');
+    }
+    parsed.rotate = body['rotate'];
+  }
+
+  if (body['enabled'] !== undefined) {
+    if (typeof body['enabled'] !== 'boolean') {
+      throw HttpError.badRequest('INVALID_ENABLED', '`enabled` must be a boolean');
+    }
+    parsed.enabled = body['enabled'];
+  }
+
+  return parsed;
+}

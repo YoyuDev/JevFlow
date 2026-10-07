@@ -27,6 +27,7 @@ JevFlow 不是一个 AI 聊天站，也不是流程图工具。它是一套很�
 - **完整执行记录** —— 每个节点的状态、输入、输出、耗时和决策，全部落进 SQLite。
 - **完全离线可跑** —— 内置 mock LLM、mock Jev、mock search，`.env` 空着也能跑 Demo。
 - **按节点选连接** —— 设置里存多套 LLM / Jev 连接，每个节点各挑一套；密钥只留在浏览器，运行时按次下发。
+- **工作流即 API** —— 把工作流发布成一个 HTTP 端点，别的服务拿着 token 就能调用并拿到结果；调用方不需要知道任何 API Key。
 - **可独立发布的 core** —— `@jevflow/core` 零运行时依赖，可以直接嵌进任何 Node.js 项目。
 - **中文优先，可切英文** —— 界面默认简体中文，右上角一键切换；文案走 i18n，不写死在组件里。
 - **浅色 / 深色主题** —— 首次访问跟随系统，用户选过之后记住选择，刷新不闪白。
@@ -249,6 +250,53 @@ Studio 右上角的齿轮就是干这个的：
 - 节点配置里存的只是**连接 id**，所以导出的工作流 JSON 可以放心分享。
 - 连接被删掉、或忘了填 Key，节点会安全回落到默认 / Mock，并在配置面板给出黄色提示，而不是运行到一半报错。
 
+### 对外 API（把工作流接进你自己的代码）
+
+Studio 里跑工作流，靠的是浏览器 `localStorage` 里的 Key。想让**别的服务**调用同一个工作流，就把它发布出去：顶栏「对外 API」→「发布为 API」。
+
+发布之后你拿到两样东西 —— 一个地址，一个 token：
+
+```bash
+curl -X POST "http://127.0.0.1:3000/api/v1/run" \
+  -H "x-api-key: jf_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"input":"请介绍一下 AI Agent"}'
+```
+
+```json
+{
+  "executionId": "exec-muk1wljc-36uhes",
+  "workflowId": "research-agent",
+  "status": "completed",
+  "output": { "choice": "complete", "confidence": 0.95 },
+  "steps": 7,
+  "durationMs": 412
+}
+```
+
+面板里直接给 cURL / JavaScript / Java 三种示例，复制即用。
+
+**凭据从哪来？** 这是「发布」和「本地跑」最大的区别：调用方手里只有一个 token，服务端必须自己知道该用哪套模型。所以点发布时，Studio 会把**当前工作流引用到的连接**一起传上去，服务端用 AES-256-GCM 加密后存进 SQLite（密钥来自 `JEVFLOW_SECRET`，没配就自动生成 `data/.secret`）。节点指向哪套连接，外部调用就用哪套，跟你在 Studio 里跑完全一致。
+
+快照是空的（工作流没引用任何连接）就回落到服务端 `.env`；`.env` 也空着，那就是 Mock。
+
+| 端点 | 说明 |
+| --- | --- |
+| `POST /api/v1/run` | 同步跑完并返回结果；加 `?mode=async` 则立刻返回 `202` + `executionId` |
+| `GET /api/v1/executions/:id` | 查异步执行的结果；一个 token 只能读自己工作流的记录 |
+| `GET /api/v1/health` | 免鉴权探活 |
+
+鉴权用 `x-api-key`，或 `Authorization: Bearer <token>`。无 token 是 `401`，token 不对也是 `401`，端点被暂停是 `403` —— 调用方不用翻日志就能分清是哪种。
+
+面板上还能随时**暂停 / 恢复**（token 不变）、**换 token**（旧的立刻失效）、**更新凭据**（工作流改了连接引用之后重新快照）、**撤销**（端点删除、token 作废）。调用次数、失败次数、最近调用时间都记在端点上。
+
+几条边界：
+
+- 工作流被删除时端点会跟着删掉（外键级联），不会留下指向空气的 token。
+- 对外响应里**不带执行轨迹**，只给结果 —— 轨迹是给你自己看的。
+- token 明文存在本地 SQLite 里，方便随时回看。**别把服务端直接暴露到公网**；真要对外，放在反向代理后面并自己再加一层鉴权。
+- 想让局域网里的别人访问，把 `.env` 的 `HOST` 从 `127.0.0.1` 改成 `0.0.0.0`。
+
 ## 执行记录（Execution Trace）
 
 底部面板（以及 `executions` / `execution_nodes` 两张表）按节点记录：
@@ -288,6 +336,7 @@ console.log(result.trace);  // NodeExecutionRecord[]
 ## API
 
 ```text
+# 本地管理接口（Studio 使用，假定访问者就是本机主人）
 GET    /api/workflows
 GET    /api/workflows/:id
 POST   /api/workflows
@@ -295,11 +344,19 @@ PUT    /api/workflows/:id
 DELETE /api/workflows/:id
 POST   /api/workflows/:id/run
 GET    /api/workflows/:id/executions
+GET    /api/workflows/:id/endpoint
+POST   /api/workflows/:id/endpoint
+DELETE /api/workflows/:id/endpoint
 GET    /api/executions/:id
 GET    /api/executions/:id/nodes
 GET    /api/runtime
 GET    /api/health
 GET    /api/node-types
+
+# 对外接口（用端点 token 鉴权，见上文「对外 API」）
+POST   /api/v1/run
+GET    /api/v1/executions/:id
+GET    /api/v1/health
 ```
 
 ## 数据库
@@ -307,13 +364,17 @@ GET    /api/node-types
 SQLite，驱动是 `better-sqlite3`，文件自动创建在 `data/jevflow.db`。
 
 ```text
-workflows        id, name, description, version, definition_json, created_at, updated_at
-executions       id, workflow_id, status, input, output, error, steps, started_at, finished_at, duration_ms
-execution_nodes  id, execution_id, node_id, node_type, label, status, input, output,
-                 decision, probability, confidence, error, started_at, finished_at, duration_ms
+workflows         id, name, description, version, definition_json, created_at, updated_at
+executions        id, workflow_id, status, input, output, error, steps, started_at, finished_at, duration_ms
+execution_nodes   id, execution_id, node_id, node_type, label, status, input, output,
+                  decision, probability, confidence, error, started_at, finished_at, duration_ms
+workflow_endpoints workflow_id, token, enabled, providers_json, published_at,
+                  call_count, error_count, last_called_at, created_at, updated_at
 ```
 
 工作流整体存成一份 JSON（`definition_json`），而不是拆成 nodes / edges 两张表 —— 第一阶段完全不需要在定义内部做查询。
+
+`workflow_endpoints.providers_json` 是全项目**唯一**一处凭据落库的地方，而且存的是密文（AES-256-GCM，密钥来自 `JEVFLOW_SECRET`，没配就用自动生成的 `data/.secret`）。对外 API 必须能在没有调用方参与的情况下自己跑起来，这个例外躲不掉 —— 那就至少让它别以明文躺着。换过 `JEVFLOW_SECRET` 之后旧密文解不开，端点会安全回落到 `.env` / Mock，面板上也会明确提示「凭据无法解密，请重新发布」。
 
 ## 后续规划
 

@@ -166,6 +166,40 @@ export interface ProviderTestResult {
   error?: string;
 }
 
+/* ---------------------------- public endpoints ---------------------------- */
+
+/** What the “对外 API” panel renders — one workflow, one published endpoint. */
+export interface EndpointStatus {
+  workflowId: string;
+  workflowName: string;
+  published: boolean;
+  enabled: boolean;
+  token: string | null;
+  /** `jf_ab12cd…` — recognisable without pasting the whole secret. */
+  tokenHint: string | null;
+  /** Absolute URL a caller posts to, e.g. `http://127.0.0.1:3000/api/v1/run`. */
+  runUrl: string | null;
+  baseUrl: string;
+  providers: { count: number; labels: string[] };
+  /** Stored credentials exist but cannot be decrypted on this machine. */
+  credentialsUnreadable: boolean;
+  publishedAt: string | null;
+  createdAt: string | null;
+  callCount: number;
+  errorCount: number;
+  lastCalledAt: string | null;
+  /** Where credentials come from when no connection is snapshotted. */
+  serverFallback: { llm: boolean; jev: boolean; offline: boolean };
+}
+
+export interface PublishEndpointPayload {
+  /** A snapshot of the connections the workflow references, sealed server-side. */
+  providers?: ProviderProfilePayload[];
+  /** Mint a fresh token, invalidating the previous one. */
+  rotate?: boolean;
+  enabled?: boolean;
+}
+
 /* ------------------------------- vue flow data ---------------------------- */
 
 /**

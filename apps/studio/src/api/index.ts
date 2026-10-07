@@ -1,8 +1,10 @@
 import { http } from './client.js';
 import type {
+  EndpointStatus,
   ExecutionDetail,
   ProviderKind,
   ProviderTestResult,
+  PublishEndpointPayload,
   RunProviders,
   RunResponse,
   RuntimeInfo,
@@ -90,5 +92,31 @@ export const providerApi = {
   async test(payload: ProviderTestPayload): Promise<ProviderTestResult> {
     const { data } = await http.post<ProviderTestResult>('/providers/test', payload);
     return data;
+  },
+};
+
+/**
+ * The public HTTP surface of one workflow.
+ *
+ * `status` is safe to call for a workflow that was never published — it answers
+ * `published: false` rather than 404, so the panel can render its empty state
+ * without special-casing the error.
+ */
+export const endpointApi = {
+  async status(workflowId: string): Promise<EndpointStatus> {
+    const { data } = await http.get<{ endpoint: EndpointStatus }>(`/workflows/${workflowId}/endpoint`);
+    return data.endpoint;
+  },
+
+  async publish(workflowId: string, payload: PublishEndpointPayload = {}): Promise<EndpointStatus> {
+    const { data } = await http.post<{ endpoint: EndpointStatus }>(
+      `/workflows/${workflowId}/endpoint`,
+      payload,
+    );
+    return data.endpoint;
+  },
+
+  async revoke(workflowId: string): Promise<void> {
+    await http.delete(`/workflows/${workflowId}/endpoint`);
   },
 };

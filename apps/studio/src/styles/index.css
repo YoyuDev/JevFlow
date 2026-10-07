@@ -1131,6 +1131,120 @@ html.dark .vue-flow__attribution a {
   gap: 8px;
 }
 
+/* ------------------------------ public API ------------------------------- */
+
+/* One workflow, one endpoint: status first, then the two strings a caller
+   actually needs (URL, token), then what the run will use to talk to the world. */
+.endpoint-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.endpoint-status__meta {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.endpoint-intro {
+  padding: 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--panel-alt);
+}
+
+.endpoint-note {
+  margin: 0 0 10px;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.endpoint-note--warn {
+  color: var(--warn-text);
+}
+
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.endpoint-row--stack {
+  display: block;
+}
+
+.endpoint-row__label {
+  flex: none;
+  width: 78px;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.endpoint-row__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.endpoint-row__text {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.endpoint-row__text.is-warn {
+  color: var(--warn-text);
+}
+
+.endpoint-examples {
+  margin: 12px 0;
+}
+
+.endpoint-examples__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.endpoint-code {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--pre-bg);
+}
+
+.endpoint-code pre {
+  margin: 0;
+  padding: 10px 40px 10px 12px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--code-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.endpoint-code__copy {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
 /* -------------------------------- projects -------------------------------- */
 
 .projects-toolbar {

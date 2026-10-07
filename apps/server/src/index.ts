@@ -2,10 +2,12 @@ import { ConsoleLogger } from '@jevflow/core';
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
 import { createDatabase } from './database/index.js';
+import { EndpointRepository } from './database/EndpointRepository.js';
 import { ExecutionRepository } from './database/ExecutionRepository.js';
 import { WorkflowRepository } from './database/WorkflowRepository.js';
 import { createRuntime } from './runtime/engineFactory.js';
 import { ensureDemoWorkflow } from './seed/demoWorkflow.js';
+import { EndpointService } from './services/EndpointService.js';
 import { ExecutionService } from './services/ExecutionService.js';
 import { WorkflowService } from './services/WorkflowService.js';
 
@@ -25,10 +27,17 @@ async function main(): Promise<void> {
     runtime,
   });
   const executionService = new ExecutionService(executionRepository);
+  const endpointService = new EndpointService({
+    endpoints: new EndpointRepository(db),
+    workflows: workflowService,
+    executions: executionService,
+    runtime,
+  });
 
   const app = await buildApp({
     workflows: workflowService,
     executions: executionService,
+    endpoints: endpointService,
     runtime: runtime.info,
     logger,
   });

@@ -54,4 +54,20 @@ CREATE TABLE IF NOT EXISTS execution_nodes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_execution_nodes_execution ON execution_nodes (execution_id, id);
+
+CREATE TABLE IF NOT EXISTS workflow_endpoints (
+  workflow_id    TEXT PRIMARY KEY,
+  token          TEXT NOT NULL,
+  enabled        INTEGER NOT NULL DEFAULT 1,
+  providers_json TEXT,
+  published_at   TEXT,
+  call_count     INTEGER NOT NULL DEFAULT 0,
+  error_count    INTEGER NOT NULL DEFAULT 0,
+  last_called_at TEXT,
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL,
+  FOREIGN KEY (workflow_id) REFERENCES workflows (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_workflow_endpoints_token ON workflow_endpoints (token);
 `;

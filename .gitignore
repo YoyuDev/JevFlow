@@ -23,6 +23,9 @@ data/*.db-shm
 data/*.sqlite
 data/*.sqlite3
 
+# sealing key for published endpoint credentials, generated on first publish
+data/.secret
+
 # logs
 *.log
 npm-debug.log*

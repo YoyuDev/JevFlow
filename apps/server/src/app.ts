@@ -2,8 +2,10 @@ import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { toApiError } from './errors.js';
 import {
+  registerEndpointRoutes,
   registerExecutionRoutes,
   registerProviderRoutes,
+  registerPublicRoutes,
   registerRuntimeRoutes,
   registerWorkflowRoutes,
 } from './routes/index.js';
@@ -42,6 +44,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerExecutionRoutes(app, deps);
   registerRuntimeRoutes(app, deps);
   registerProviderRoutes(app);
+  registerEndpointRoutes(app, deps);
+  // Registered last: `/api/v1/*` is the public contract, and keeping it at the
+  // bottom of the list makes it obvious where the owner-only surface ends.
+  registerPublicRoutes(app, deps);
 
   app.setNotFoundHandler((request, reply) => {
     void reply.code(404).send({

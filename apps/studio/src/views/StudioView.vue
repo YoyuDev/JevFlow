@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { FolderOpened, Moon, Plus, Setting, Sunny } from '@element-plus/icons-vue';
+import { Connection, FolderOpened, Moon, Plus, Setting, Sunny } from '@element-plus/icons-vue';
+import ApiPanel from '@/components/ApiPanel.vue';
 import ExecutionTrace from '@/components/ExecutionTrace.vue';
 import FlowCanvas from '@/components/FlowCanvas.vue';
 import NodeConfigPanel from '@/components/NodeConfigPanel.vue';
@@ -27,6 +28,7 @@ const { t } = useI18n();
 
 const runDialogVisible = ref(false);
 const settingsVisible = ref(false);
+const apiVisible = ref(false);
 
 /**
  * The pills describe the *server's* own clients. Which connection a particular
@@ -186,6 +188,7 @@ function onRun(input: string): void {
         <el-button type="primary" :loading="store.running" @click="runDialogVisible = true">
           {{ t('workflow.run') }}
         </el-button>
+        <el-button :icon="Connection" @click="apiVisible = true">{{ t('endpoint.open') }}</el-button>
 
         <span class="app-header__divider" />
 
@@ -268,6 +271,7 @@ function onRun(input: string): void {
 
     <RunDialog v-model="runDialogVisible" :running="store.running" @run="onRun" />
     <SettingsDialog v-model="settingsVisible" />
+    <ApiPanel v-model="apiVisible" />
     <ProjectDialog />
   </div>
 </template>

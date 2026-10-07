@@ -99,10 +99,51 @@ export interface ApiErrorBody {
   };
 }
 
+/* ----------------------------- public endpoints --------------------------- */
+
+/**
+ * What the Studio's “对外 API” panel renders.
+ *
+ * `token` is returned whole rather than hashed: JevFlow is a local tool, the
+ * panel needs to show and copy it long after the moment it was created, and the
+ * token only ever unlocks one workflow on this machine.
+ */
+export interface EndpointStatusResponse {
+  workflowId: string;
+  workflowName: string;
+  published: boolean;
+  enabled: boolean;
+  token: string | null;
+  /** `jf_ab12cd…` — stable enough to recognise a token you already pasted into code. */
+  tokenHint: string | null;
+  runUrl: string | null;
+  baseUrl: string;
+  /** The connections snapshotted at publish time. */
+  providers: { count: number; labels: string[] };
+  /** Stored credentials exist but cannot be decrypted (the secret changed). */
+  credentialsUnreadable: boolean;
+  publishedAt: string | null;
+  createdAt: string | null;
+  callCount: number;
+  errorCount: number;
+  lastCalledAt: string | null;
+  /** Where a run's credentials come from when the snapshot is empty. */
+  serverFallback: { llm: boolean; jev: boolean; offline: boolean };
+}
+
+/** The `202` body of an async invocation. */
+export interface AsyncRunAccepted {
+  executionId: string;
+  workflowId: string;
+  status: 'running';
+}
+
 /** Everything the route layer needs, assembled once in `index.ts`. */
 export interface AppDeps {
   workflows: import('./services/WorkflowService.js').WorkflowService;
   executions: import('./services/ExecutionService.js').ExecutionService;
+  /** Public endpoints — the token-authenticated surface under `/api/v1`. */
+  endpoints: import('./services/EndpointService.js').EndpointService;
   runtime: RuntimeInfoResponse;
   /** Used by the error handler so 5xx responses are never swallowed. */
   logger: import('@jevflow/core').Logger;

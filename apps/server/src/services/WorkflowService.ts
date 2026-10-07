@@ -75,11 +75,16 @@ export class WorkflowService {
    * is present the engine is rebuilt so nodes can address them by id. Profiles
    * stay in memory — only `input` is written to SQLite, and a node config holds
    * nothing but the profile id.
+   *
+   * `onExecutionCreated` fires the instant the row exists, before the graph is
+   * walked. That is what lets a public caller answer `202 Accepted` with an id
+   * while the run is still in flight — the Studio never needs it and omits it.
    */
   async run(
     id: string,
     input: unknown,
     providers?: RunProviderSelection,
+    options?: { onExecutionCreated?: (executionId: string) => void },
   ): Promise<RunWorkflowResponse> {
     const workflow = this.get(id);
     const executionId = createId('exec');
@@ -91,6 +96,8 @@ export class WorkflowService {
       input,
       startedAt,
     });
+
+    options?.onExecutionCreated?.(executionId);
 
     const engine = providers
       ? createEngineWith(this.runtime.env, this.runtime.logger, providers)

@@ -208,8 +208,10 @@ export class WorkflowEngine {
       hooks.onNodeStart?.({ node, input: nodeInput, runId });
 
       const attempt: ExecutionAttempt = { output: null };
+      let controlFlow = false;
       try {
         const executor = this.executors.mustGet(node.type);
+        controlFlow = executor.controlFlow === true;
         const result = await executor.execute({ node, context, deps: this.deps() });
         attempt.output = result.output;
         if (result.decision) attempt.decision = result.decision;
@@ -219,7 +221,11 @@ export class WorkflowEngine {
 
       let nextNode: WorkflowNode | undefined;
       if (!attempt.error) {
-        context.setNodeOutput(node.id, attempt.output);
+        // Control-flow nodes (Jev) stay addressable by id, but must not become
+        // the implicit "previous output" — otherwise `{{last}}` and an End node
+        // without an `output` template would receive the routing JSON instead of
+        // the answer that flowed past. See `NodeExecutor.controlFlow`.
+        context.setNodeOutput(node.id, attempt.output, { asLastOutput: !controlFlow });
         if (node.type === 'end') {
           finalOutput = attempt.output;
         } else {

@@ -19,9 +19,16 @@ import { resolveJevConfig } from './nodeConfig.js';
  * `{ question, choices, choice, probability, confidence, reason }`
  *
  * `config.providerId` picks a named decision connection out of `deps.providers`.
+ *
+ * Because the answer is a routing decision rather than data, this executor is
+ * marked `controlFlow` — the engine keeps the result addressable as `{{jev-1}}`
+ * but never lets it become the implicit `{{last}}` / End-node fallback.
  */
 export class JevNodeExecutor implements NodeExecutor {
   readonly type = 'jev' as const;
+
+  /** Decides *where to go*, not *what the data is*. See `NodeExecutor.controlFlow`. */
+  readonly controlFlow = true;
 
   async execute({ node, context, deps }: NodeExecutionInput): Promise<NodeExecutionOutput> {
     const config = resolveJevConfig(node);

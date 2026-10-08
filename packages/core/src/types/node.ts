@@ -93,5 +93,15 @@ export interface NodeExecutionOutput {
  */
 export interface NodeExecutor {
   readonly type: WorkflowNodeType;
+  /**
+   * True when this node decides *where to go*, not *what the data is*.
+   *
+   * The engine still records a control-flow node's output under its own id, so
+   * `{{jev-1}}` keeps working. It just never lets that output become the
+   * implicit "previous output" — otherwise a downstream `{{last}}`, or an End
+   * node left without an `output` template, would receive the routing decision
+   * instead of the answer that flowed past it.
+   */
+  readonly controlFlow?: boolean;
   execute(input: NodeExecutionInput): Promise<NodeExecutionOutput>;
 }

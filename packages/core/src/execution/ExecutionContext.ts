@@ -33,7 +33,10 @@ export class ExecutionContext implements ExecutionContextLike {
     this.currentOutput = init.input;
   }
 
-  /** Output of the most recently executed node (seeded with the run input). */
+  /**
+   * Output of the most recently executed **data** node (seeded with the run
+   * input). Control-flow nodes do not update it — see `NodeExecutor.controlFlow`.
+   */
   get lastOutput(): unknown {
     return this.currentOutput;
   }
@@ -55,9 +58,17 @@ export class ExecutionContext implements ExecutionContextLike {
     return this.nodeOutputStore.get(nodeId);
   }
 
-  setNodeOutput(nodeId: string, output: unknown): void {
+  /**
+   * Records a node's output under its id.
+   *
+   * By default it also becomes `lastOutput` — what `{{last}}` resolves to and
+   * what an End node without an `output` template falls back to. Control-flow
+   * nodes pass `asLastOutput: false` so their routing decision stays out of the
+   * data flow. See `NodeExecutor.controlFlow`.
+   */
+  setNodeOutput(nodeId: string, output: unknown, options: { asLastOutput?: boolean } = {}): void {
     this.nodeOutputStore.set(nodeId, output);
-    this.currentOutput = output;
+    if (options.asLastOutput !== false) this.currentOutput = output;
   }
 
   getVariable(key: string): unknown {

@@ -74,7 +74,14 @@ export interface ExecutionContextLike {
   readonly variables: Record<string, unknown>;
   readonly nodeOutputs: Record<string, unknown>;
   getNodeOutput(nodeId: string): unknown;
-  setNodeOutput(nodeId: string, output: unknown): void;
+  /**
+   * Records a node's output under its id.
+   *
+   * `asLastOutput: false` keeps it out of `lastOutput` — control-flow nodes use
+   * this so a routing decision never masquerades as data (see
+   * `NodeExecutor.controlFlow`).
+   */
+  setNodeOutput(nodeId: string, output: unknown, options?: { asLastOutput?: boolean }): void;
   getVariable(key: string): unknown;
   setVariable(key: string, value: unknown): void;
   /** Flat namespace used to resolve `{{token}}` templates. */

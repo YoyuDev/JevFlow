@@ -163,7 +163,7 @@ const zhCN = {
     failOnErrorHint:
       '开着：非 2xx 直接让节点失败，错误里带上状态码和响应片段。关掉：把 ok / status / body 交给下游，可以用 Jev 节点决定怎么走。',
     variables: '可用变量',
-    variablesHint: '点击可追加到当前节点的主输入框（Prompt / Query / 路径）。',
+    variablesHint: '点击可追加到当前节点的主输入框（Prompt / Query / 路径 / 输出模板）。',
     edge: '连线 ID',
     path: '路径',
     condition: '分支条件',

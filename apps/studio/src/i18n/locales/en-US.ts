@@ -167,7 +167,7 @@ const enUS: MessageSchema = {
     failOnErrorHint:
       'On: a non-2xx response fails the node, reporting the status and a body excerpt. Off: ok / status / body are handed downstream so a Jev node can decide what to do.',
     variables: 'Available variables',
-    variablesHint: 'Click to append to this node’s main input (Prompt / Query / path).',
+    variablesHint: 'Click to append to this node’s main input (Prompt / Query / path / output template).',
     edge: 'Edge ID',
     path: 'Path',
     condition: 'Condition',

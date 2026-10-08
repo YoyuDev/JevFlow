@@ -63,6 +63,9 @@ const httpHasBody = computed(() => (field('method') || 'GET') !== 'GET');
 const tokenTarget = computed(() => {
   if (nodeType.value === 'tool') return 'query';
   if (nodeType.value === 'http') return 'url';
+  // End has no prompt: its one editable field is the output template, so a
+  // clicked variable has to land there or the click looks like a no-op.
+  if (nodeType.value === 'end') return 'output';
   return 'prompt';
 });
 
